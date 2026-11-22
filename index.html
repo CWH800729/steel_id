@@ -11,186 +11,15 @@
 <dialog id="date-dialog" style="border:1px solid #d5dfe6;border-radius:10px;padding:24px;max-width:min(420px,95vw)"><h2 id="date-title">完成日</h2><p id="date-note" class="muted"></p><label>完成日<input id="date-input" placeholder="YYYYMMDD"></label><div class="row" style="margin-top:20px"><button id="date-save" class="primary">寫回 Google Sheet</button><button id="date-cancel">取消</button></div><p id="date-status" role="status"></p></dialog>
 <footer><span id="status" role="status" aria-live="polite">正在讀取 Google Sheet…</span></footer></div><script type="module">const SHEET_API_URL='https://script.google.com/macros/s/AKfycby2_yu-RR2vDofagSV1QMmqQPl7jP2u2KzIrxkVFh-VxLJL11JZxdWotwr_cc4nBJ20/exec';
 
-const TYPES=['柱','大梁','小梁','側撐','BRB','塔吊補強','待確認'];
 const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
 const TODAY=['year','month','day'].map(type=>parts.find(part=>part.type===type).value).join('-');
 function dateValue(input,optional=false){
-  const raw=String(input??'').trim();if(!raw&&optional)return '';
+  const raw=String(input??'').trim();if(!raw&&optional)return'';
   const compact=raw.match(/^(\d{4})(\d{2})(\d{2})$/);
   const text=compact?`${compact[1]}-${compact[2]}-${compact[3]}`:raw.replaceAll('/','-');
   const date=new Date(text+'T12:00:00Z');
   if(!/^\d{4}-\d{2}-\d{2}$/.test(text)||Number.isNaN(date.getTime())||date.toISOString().slice(0,10)!==text)throw Error('無效日期：'+raw);
   return text;
-}
-function classify(raw,explicit=''){
-  const name=String(raw??'').trim().toUpperCase();
-  let type='待確認',analysis='',section='';
-  const match=name.match(/^([A-Z]+)(\d+)(.+)$/);
-  if(/^AV[A-Z]*\d/.test(name)){type='塔吊補強';analysis='AV｜塔吊補強';}
-  else if(match){
-    const [,area,level,tail]=match;section=String(Number(level));
-    if(/^[BG]\d+$/.test(tail)&&name.length>=5&&name.length<=6)type='大梁';
-    else if(/^[XY]\d+$/.test(tail)&&name.length>=5&&name.length<=6)type='小梁';
-    else if(/^C[X]\d+Y\d+$/.test(tail))type='柱';
-    else if(/^(WL|L)\d+$/.test(tail))type='側撐';
-    else if(/^BU([XY])?\d+$/.test(tail))type='BRB';
-    analysis=`${area}區｜編號段 ${level}｜${tail}｜${type}`;
-  } else analysis='不符合已知完整編號規則';
-  if(explicit){if(!TYPES.includes(explicit))throw Error('不支援的構件類型：'+explicit);type=explicit;analysis+='｜資料指定：'+explicit;}
-  return {name,type,analysis,section};
-}
-function initialSettings(){return{reference:20,minutesPerDay:420,plannedBatch:{柱:1,大梁:1,小梁:2,側撐:2,BRB:1,塔吊補強:1,待確認:1},rates:{柱:[null,30,null,null],大梁:[null,20,null,null],小梁:[null,10,10,10],側撐:[null,null,null,null],BRB:[null,null,null,null],塔吊補強:[null,null,null,null],待確認:[null,null,null,null]}};}
-function minutes(settings,type,size=1){const value=settings.rates[type]?.[size];return typeof value==='number'&&Number.isFinite(value)&&value>0?value:null;}
-function normalizeMembers(rows){
-  const ids=new Set();return rows.map((row,index)=>{
-    const id=String(row['構件ID']||'').trim(),name=String(row['構件編號']||row.Name||'').trim(),section=String(row['節次']||'').trim();
-    if(!id||!name||!section)throw Error(`第 ${index+2} 列缺少構件ID、節次或構件編號`);
-    if(ids.has(id))throw Error('構件ID重複：'+id);ids.add(id);
-    const lift=dateValue(row['吊裝完成日期'],true),weld=dateValue(row['電銲完成日期'],true);
-    if(weld&&(!lift||weld<lift))throw Error('電銲日期早於吊裝日期或缺少吊裝日期：'+id);
-    const explicit=String(row['構件類型']||'').trim();
-    return{id,...classify(name,explicit),name,section,explicit,lift,weld,batch:String(row['吊次編號']||'').trim()};
-  });
-}
-function validatePlan(rows,total){
-  const sorted=rows.map(row=>({date:dateValue(row.date),count:Number(row.count)})).sort((left,right)=>left.date.localeCompare(right.date));
-  let previous=-1;const dates=new Set();
-  for(const row of sorted){if(!Number.isInteger(row.count)||row.count<0||row.count>total||row.count<previous||dates.has(row.date))throw Error('預計累計數須為不超過總件數的遞增整數，日期不可重複');previous=row.count;dates.add(row.date);}
-  return sorted;
-}
-function interpolatePlan(plan,date){
-  if(!plan.length||date<plan[0].date)return null;
-  if(date>=plan.at(-1).date)return plan.at(-1).count;
-  const upper=plan.findIndex(point=>point.date>date),left=plan[upper-1],right=plan[upper];
-  const fraction=(Date.parse(date)-Date.parse(left.date))/(Date.parse(right.date)-Date.parse(left.date));
-  return left.count+(right.count-left.count)*fraction;
-}
-function validateSchedule(input){
-  const startDate=dateValue(input.startDate),dailyLifts=Number(input.dailyLifts),workweek=Number(input.workweek??7);
-  if(!Number.isInteger(dailyLifts)||dailyLifts<1||dailyLifts>10000)throw Error('每天預計吊數須為1～10000的整數');
-  if(![5,6,7].includes(workweek))throw Error('施工週設定不正確');
-  return{startDate,dailyLifts,workweek};
-}
-function shiftDate(date,days){return new Date(Date.parse(date)+days*86400000).toISOString().slice(0,10);}
-function liftQueue(members,settings){
-  const groups=new Map(),queue=[];
-  for(const member of members){const key=JSON.stringify([member.section,member.type]);if(!groups.has(key))groups.set(key,{type:member.type,items:[]});groups.get(key).items.push(member);}
-  for(const {type,items}of groups.values()){
-    const size=['小梁','側撐'].includes(type)?Number(settings.plannedBatch[type]||1):1;
-    if(![1,2,3].includes(size))throw Error('每吊件數須為1～3');
-    for(let offset=0;offset<items.length;offset+=size){const batch=items.slice(offset,offset+size);queue.push({size:batch.length,ids:batch.map(member=>member.id)});}
-  }
-  return queue;
-}
-function curveFromQueue(queue,startDate,initialCount,config){
-  const points=[{date:shiftDate(startDate,-1),count:initialCount}];let offset=0,count=initialCount,date=startDate,workingDays=0;
-  for(let elapsed=0;offset<queue.length;elapsed++,date=shiftDate(date,1)){
-    if(elapsed>100000)throw Error('推估期間過長，請提高每日預計吊數');
-    const weekday=new Date(date+'T12:00:00Z').getUTCDay();
-    if(config.workweek===6&&weekday===0||config.workweek===5&&(weekday===0||weekday===6))continue;
-    for(let index=0;index<config.dailyLifts&&offset<queue.length;index++)count+=queue[offset++].size;
-    points.push({date,count});workingDays++;
-  }
-  return{points,workingDays,finishDate:points.at(-1).date};
-}
-function automaticSchedule(members,settings,input,reports={},asOf=TODAY){
-  const config=validateSchedule(input),installed=members.filter(member=>member.lift&&member.lift<=asOf),pending=members.filter(member=>!member.lift||member.lift>asOf);
-  const original=curveFromQueue(liftQueue(members,settings),config.startDate,0,config);
-  const queue=liftQueue(pending,settings),warnings=[];let extraLifts=0,inferredCount=0;
-  const byDate=new Map();for(const member of installed){if(!byDate.has(member.lift))byDate.set(member.lift,[]);byDate.get(member.lift).push(member);}
-  for(const [date,value]of Object.entries(reports).sort(([left],[right])=>left.localeCompare(right))){
-    dateValue(date);if(!Number.isInteger(value)||value<0)throw Error('實際吊數須為非負整數');if(date>asOf)continue;
-    const day=byDate.get(date)||[],known=new Set();let ambiguous=false;
-    for(const member of day){if(!member.batch&&['小梁','側撐'].includes(member.type))ambiguous=true;else known.add(member.batch||'single:'+member.id);}
-    if(ambiguous){warnings.push(`${date} 有已安裝小梁／側撐未填吊次編號，該日只扣已確認構件，未再折算吊數`);continue;}
-    if(value<known.size)warnings.push(`${date} 填寫吊數少於已記錄吊次，優先保留已安裝構件`);
-    extraLifts+=Math.max(0,value-known.size);
-  }
-  const appliedLifts=Math.min(extraLifts,queue.length);
-  const inferredIds=[];for(let index=0;index<appliedLifts;index++){inferredCount+=queue[index].size;inferredIds.push(...queue[index].ids);}
-  if(extraLifts>queue.length)warnings.push('填寫吊數超過可推估剩餘吊次，已限制在總構件數內');
-  if(pending.some(member=>member.type==='待確認'))warnings.push('待確認類型暫按1件／吊推估，請確認分類');
-  const outstanding=queue.slice(appliedLifts),baseline=installed.length+inferredCount,start=config.startDate>asOf?config.startDate:shiftDate(asOf,1);
-  const revised=curveFromQueue(outstanding,start,baseline,config);
-  revised.points=[{date:asOf,count:baseline},...revised.points.filter(point=>point.date>asOf)];
-  return{config,original:original.points,revised:revised.points,finishDate:outstanding.length?revised.finishDate:asOf,workingDays:revised.workingDays,installedCount:installed.length,inferredCount,inferredIds,appliedLifts,remainingLifts:outstanding.length,remainingCount:members.length-baseline,warnings};
-}
-function plannedWorkload(members,settings){
-  let cost=0;const missing=[];
-  for(const type of TYPES){
-    const count=members.filter(member=>member.type===type).length;if(!count)continue;
-    const size=['小梁','側撐'].includes(type)?Number(settings.plannedBatch[type]):1;
-    const full=Math.floor(count/size),tail=count%size;
-    for(const [quantity,number]of [[size,full],[tail,tail?1:0]]){
-      if(!number)continue;const rate=minutes(settings,type,quantity);
-      if(rate===null)missing.push(`${type}一吊${quantity}件`);else cost+=rate*number;
-    }
-  }
-  return{cost:missing.length?null:cost,knownCost:cost,missing:[...new Set(missing)]};
-}
-function analyzeDays(members,settings,actualMinutes,asOf=TODAY){
-  const dates=[...new Set(members.map(member=>member.lift).filter(date=>date&&date<=asOf))].sort();
-  return dates.map(date=>{
-    const day=members.filter(member=>member.lift===date),batches=new Map(),issues=[];
-    let equivalent=0,unknown=0;
-    for(const member of day){
-      const single=minutes(settings,member.type);if(single===null)unknown++;else equivalent+=single/settings.reference;
-      if(!member.batch&&['小梁','側撐'].includes(member.type)){issues.push('小梁／側撐缺吊次編號');continue;}
-      const key=member.batch||`single:${member.id}`;
-      if(!batches.has(key))batches.set(key,[]);batches.get(key).push(member);
-    }
-    let standard=0;
-    for(const group of batches.values()){
-      const type=group[0].type,size=group.length;
-      if(group.some(member=>member.type!==type)){issues.push('同一吊次混用不同類型');continue;}
-      if(size>1&&!['小梁','側撐'].includes(type)){issues.push('柱／大梁等類型須單件一吊');continue;}
-      const rate=minutes(settings,type,size);if(rate===null)issues.push('缺少批次標準分鐘');else standard+=rate;
-    }
-    if(unknown)issues.push('缺少單件標準分鐘或類型');
-    const actual=Number(actualMinutes[date]);const usable=Number.isFinite(actual)&&actual>0&&issues.length===0;
-    return{date,count:day.length,lifts:issues.length?null:batches.size,equivalent:unknown?null:equivalent,average:unknown?null:equivalent/day.length,standard:issues.length?null:standard,actual:actual>0?actual:null,factor:usable?standard/actual:null,perHour:usable?equivalent/(actual/60):null,issues:[...new Set(issues)]};
-  });
-}
-function forecast(allMembers,remaining,settings,actualMinutes,asOf=TODAY){
-  const days=analyzeDays(allMembers,settings,actualMinutes,asOf),valid=days.filter(day=>day.factor!==null);
-  const actual=valid.reduce((sum,day)=>sum+day.actual,0),standard=valid.reduce((sum,day)=>sum+day.standard,0);
-  const factor=actual>0?standard/actual:1,work=plannedWorkload(remaining,settings);
-  const duration=work.cost===null?null:work.cost/factor;
-  return{...work,factor,sampleDays:valid.length,duration,hours:duration===null?null:duration/60,days:duration===null?null:duration/settings.minutesPerDay};
-}
-function parseCsv(text){
-  const rows=[];let row=[],field='',quoted=false;
-  for(let index=0;index<text.length;index++){
-    const character=text[index];if(character==='"'){if(quoted&&text[index+1]==='"'){field+='"';index++;}else quoted=!quoted;}
-    else if(character===','&&!quoted){row.push(field);field='';}
-    else if((character==='\n'||character==='\r')&&!quoted){if(character==='\r'&&text[index+1]==='\n')index++;row.push(field);if(row.some(value=>value!==''))rows.push(row);row=[];field='';}else field+=character;
-  }
-  if(quoted)throw Error('CSV 引號未結束');if(field||row.length){row.push(field);rows.push(row);}
-  const header=rows.shift()?.map(value=>value.replace(/^\uFEFF/,'').trim());if(!header||new Set(header).size!==header.length)throw Error('CSV 標題列缺漏或重複');
-  return rows.map((values,index)=>{if(values.length!==header.length)throw Error(`CSV 第 ${index+2} 列欄數不符`);return Object.fromEntries(header.map((key,position)=>[key,values[position]]));});
-}
-function normalizeDaily(rows){
-  const result=Object.create(null),dates=new Set();
-  for(const row of rows){const date=dateValue(row['吊裝日期']),value=Number(row['實際吊裝分鐘']);if(dates.has(date))throw Error('每日作業日期重複：'+date);dates.add(date);if(String(row['實際吊裝分鐘']??'').trim()===''&&String(row['實際總吊數']??'').trim()!=='')continue;if(!Number.isFinite(value)||value<=0)throw Error('實際吊裝分鐘須為正數：'+date);result[date]=value;}
-  if(!rows.length)throw Error('每日作業 CSV 沒有資料');
-  return result;
-}
-function normalizeActualLifts(rows){const result=Object.create(null);for(const row of rows){if(String(row['實際總吊數']??'').trim()==='')continue;const date=dateValue(row['吊裝日期']),value=Number(row['實際總吊數']);if(!Number.isInteger(value)||value<0)throw Error('實際總吊數須為非負整數');if(date>TODAY)throw Error('實際吊數不可填未來日期');if(Object.hasOwn(result,date))throw Error('實際吊數日期重複');result[date]=value;}return result;}
-function normalizePlans(rows,members){
-  const result=Object.create(null),sections=new Set(members.map(member=>member.section));
-  for(const row of rows){const value=String(row['節次']||'').trim(),key=value==='全案'||value==='all'?'all':value;if(!key||key!=='all'&&!sections.has(key))throw Error('預計曲線節次不存在：'+value);if(String(row['預計累計數']??'').trim()==='')throw Error('預計累計數不可空白');result[key]??=[];result[key].push({date:row['日期'],count:row['預計累計數']});}
-  if(!rows.length)throw Error('預計曲線 CSV 沒有資料');
-  for(const key of Object.keys(result))result[key]=validatePlan(result[key],key==='all'?members.length:members.filter(member=>member.section===key).length);
-  return result;
-}
-function sample(){
-  const rows=[];for(let section=1;section<=8;section++){
-    const names=[`A${section}CX2Y1`,`A${section}CX3Y2`,`A${section}G01`,`A${section}G02`,`A${section}B01`,`A${section}B02`,`A${section}X01`,`A${section}X02`,`A${section}Y01`,`A${section}Y02`,`A${section}L01`,`A${section}WL2`];
-    names.forEach((name,index)=>{const date=section<=2?(index<6?'2026-11-18':index<10?'2026-11-19':''):section===3&&index<6?'2026-11-20':'';
-      rows.push({'構件ID':`DEMO-${section}-${index}`,'節次':String(section),'構件編號':name,'吊裝完成日期':date,'電銲完成日期':date==='2026-11-18'?'2026-11-20':'','吊次編號':date?`${date}-S${section}-${index>=6?Math.floor(index/2):index}`:''});});
-  }
-  const members=normalizeMembers(rows),plans={all:[{date:'2026-11-16',count:0},{date:'2026-11-18',count:12},{date:'2026-11-20',count:30},{date:'2026-11-23',count:62},{date:'2026-11-26',count:84},{date:'2026-11-28',count:96}]};
-  return{members,settings:initialSettings(),actualMinutes:{'2026-11-18':300,'2026-11-19':80,'2026-11-20':140},plans,schedules:{all:{startDate:'2026-11-16',dailyLifts:6,workweek:7}},actualLifts:{},source:'demo'};
 }
 
 function simpleSheetToState(data){
@@ -304,7 +133,7 @@ async function readRemote(){
     const endpoint=validApiUrl(SHEET_API_URL).href,data=await sheetApiRequest(endpoint,'read');state=simpleSheetToState(data);section='all';page=0;
     const selector=get('section');selector.replaceChildren(new Option('全案','all'));for(const value of [...new Set(state.members.map(member=>member.section))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true})))selector.add(new Option(value,value));
     const types=get('type-filter');types.replaceChildren(new Option('全部類型','all'));for(const value of [...new Set(state.members.map(member=>member.type))].sort())types.add(new Option(value,value));type='all';
-    get('source').textContent='Google Sheet · 已更新';get('status').textContent='已讀取最新構件進度。'+(state.skippedName?` ${state.skippedName} 列缺少完整名稱，未計入件數。`:'')+(state.skippedQuantity?` ${state.skippedQuantity} 列數量未填或無法辨識，未計入件數。`:'')+(state.invalidDates?` ${state.invalidDates} 列完成日格式無法辨識，暫不列入已完成。`:'');render();
+    get('source').textContent=`Google Sheet · ${data.sheetName} · 已更新`;get('status').textContent='已讀取最新構件進度。'+(state.skippedName?` ${state.skippedName} 列缺少完整名稱，未計入件數。`:'')+(state.skippedQuantity?` ${state.skippedQuantity} 列數量未填或無法辨識，未計入件數。`:'')+(state.invalidDates?` ${state.invalidDates} 列完成日格式無法辨識，暫不列入已完成。`:'');render();
   }catch(error){get('source').textContent=state?'更新失敗 · 顯示上次資料':'Google Sheet 讀取失敗';get('status').textContent=`讀取未完成：${error.message}`;}
   finally{button.disabled=false;button.textContent='從 Google Sheet 更新';}
 }
