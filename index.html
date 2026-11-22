@@ -3,15 +3,13 @@
 
 .schedule-fields{grid-template-columns:repeat(3,minmax(0,1fr))}.schedule-fields input{width:100%}#actual-lift-rows input{width:160px}.chart-legend .revised{background:repeating-linear-gradient(90deg,#bd8335 0 5px,transparent 5px 8px)}@media(max-width:700px){.schedule-fields{grid-template-columns:1fr}#actual-lift-rows input{width:120px}}
 </style></head><body>
-<header><div class="identity"><span class="logo">▥</span><div><h1>鋼構構件進度</h1><p>Google Sheet 進度檢視</p></div></div><div class="actions"><span id="source" class="source">正在讀取 Google Sheet</span><button id="google-read">從 Google Sheet 更新</button></div></header>
-<div class="page"><div class="scope"><div><span class="eyebrow">樓層／節次</span><select id="section" aria-label="樓層／節次"><option value="all">全案</option></select></div><div class="scope-note">統計截至 <strong id="asof"></strong><br>資料與日期請在 Google Sheet 修改</div></div>
+<header><div class="identity"><span class="logo">▥</span><div><h1>鋼構構件進度</h1><p>本機 JSON 進度檢視</p></div></div><div class="actions"><span id="source" class="source">尚未開啟 JSON</span><input id="json-file" type="file" accept=".json,application/json" hidden><button id="open-json">開啟 JSON</button><button id="save-json" disabled>儲存 JSON</button></div></header>
+<div class="page"><div class="scope"><div><span class="eyebrow">樓層／節次</span><select id="section" aria-label="樓層／節次"><option value="all">全案</option></select></div><div class="scope-note">統計截至 <strong id="asof"></strong><br>完成日修改後請儲存 JSON</div></div>
 <section class="stats" aria-label="構件進度摘要"><div><span>已確認標示數量</span><strong id="total">—</strong><small>依目前施工節次</small></div><div><span>已完成吊裝</span><strong id="completed">—</strong><small id="completion-rate">等待資料</small></div><div><span>剩餘數</span><strong id="remaining">—</strong><small>尚未完成吊裝</small></div><div class="stat-progress"><span>吊裝完成率</span><strong id="percent">—</strong><div class="track"><i id="progress-fill"></i></div></div></section>
-<section class="panel chart-panel"><div class="panel-heading"><div><h2>累計吊裝進度</h2><p>依 Google Sheet 的完成日統計</p></div><div class="chart-legend"><span><i class="actual"></i>實際吊裝</span></div></div><svg id="s-chart" role="img" aria-label="日期與累計構件數"></svg><div class="chart-bottom"><span id="chart-note">等待 Google Sheet 資料</span><span>橫軸日期 · 縱軸累計標示數量</span></div></section>
+<section class="panel chart-panel"><div class="panel-heading"><div><h2>累計吊裝進度</h2><p>依 JSON 的完成日統計</p></div><div class="chart-legend"><span><i class="actual"></i>實際吊裝</span></div></div><svg id="s-chart" role="img" aria-label="日期與累計構件數"></svg><div class="chart-bottom"><span id="chart-note">等待 JSON 資料</span><span>橫軸日期 · 縱軸累計標示數量</span></div></section>
 <section class="panel"><div class="panel-heading"><div><h2>構件明細</h2><p>數量為 CAD 標示數量，未跨視圖去重；每列為一個計算用標示單位</p></div><div class="table-controls"><label class="check"><input id="show-analysis" type="checkbox">顯示分析編號</label><select id="filter-column" aria-label="篩選欄位"></select><input id="search" placeholder="包含的文字" aria-label="包含的文字"><select id="type-filter" aria-label="構件類型"><option value="all">全部類型</option></select></div></div><div class="table-wrap"><table id="members-table"><thead id="members-head"></thead><tbody id="members-body"></tbody></table></div><div class="pagination"><span id="table-count"></span><div class="row"><button id="prev">上一頁</button><span id="page-number"></span><button id="next">下一頁</button></div></div></section>
-<dialog id="date-dialog" style="border:1px solid #d5dfe6;border-radius:10px;padding:24px;max-width:min(420px,95vw)"><h2 id="date-title">完成日</h2><p id="date-note" class="muted"></p><label>完成日<input id="date-input" placeholder="YYYYMMDD"></label><div class="row" style="margin-top:20px"><button id="date-save" class="primary">寫回 Google Sheet</button><button id="date-cancel">取消</button></div><p id="date-status" role="status"></p></dialog>
-<footer><span id="status" role="status" aria-live="polite">正在讀取 Google Sheet…</span></footer></div><script type="module">const SHEET_API_URL='https://script.google.com/macros/s/AKfycby2_yu-RR2vDofagSV1QMmqQPl7jP2u2KzIrxkVFh-VxLJL11JZxdWotwr_cc4nBJ20/exec';
-
-const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
+<dialog id="date-dialog" style="border:1px solid #d5dfe6;border-radius:10px;padding:24px;max-width:min(420px,95vw)"><h2 id="date-title">完成日</h2><p id="date-note" class="muted"></p><label>完成日<input id="date-input" placeholder="YYYYMMDD"></label><div class="row" style="margin-top:20px"><button id="date-save" class="primary">套用到目前資料</button><button id="date-cancel">取消</button></div><p id="date-status" role="status"></p></dialog>
+<footer><span id="status" role="status" aria-live="polite">請開啟 JSON 檔案。</span></footer></div><script type="module">const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
 const TODAY=['year','month','day'].map(type=>parts.find(part=>part.type===type).value).join('-');
 function dateValue(input,optional=false){
   const raw=String(input??'').trim();if(!raw&&optional)return'';
@@ -23,9 +21,9 @@ function dateValue(input,optional=false){
 }
 
 function simpleSheetToState(data){
-  if(!data?.ok||data.schema!=='steel-sheet-api-v1'||!Array.isArray(data.rows))throw Error(data?.error||'API資料格式不符');
+  if(!data||!['steel-sheet-api-v1','steel-progress-json-v1'].includes(data.schema)||!Array.isArray(data.rows))throw Error('JSON資料格式不符');
   const required=['完整名稱','標示數量合計','完成日'];
-  const missing=required.filter(field=>!data.headers?.includes(field));if(missing.length)throw Error('Google Sheet 缺少欄位：'+missing.join('、'));
+  const missing=required.filter(field=>!data.headers?.includes(field));if(missing.length)throw Error('JSON 缺少欄位：'+missing.join('、'));
   const members=[],apiRows=Object.create(null),quantities=Object.create(null);let skippedName=0,skippedQuantity=0,invalidDates=0;
   for(const row of data.rows){
     const values=row.values||{},name=String(values['完整名稱']??'').trim(),rawQuantity=String(values['標示數量合計']??'').trim();
@@ -35,43 +33,17 @@ function simpleSheetToState(data){
     if(!Number.isInteger(sourceRow)||sourceRow<2||members.length+quantity>200000)throw Error('資料列或標示數量超出網頁可處理範圍');
     let lift='';try{lift=dateValue(values['完成日'],true);}catch{invalidDates++;}
     const kind=String(values['構件類型']??'').trim()||'未分類',section=String(values['樓層／節次']??'').trim()||'未指定',analysis=['分區','樓層／節次','大梁方向(G/B)','小梁方向(X/Y)','流水號','構件類型','構件代碼','未拆分尾碼'].map(field=>String(values[field]??'')).join('｜');
+    if(apiRows[sourceRow])throw Error('JSON來源列號重複：'+sourceRow);
     apiRows[sourceRow]=row;quantities[sourceRow]=quantity;
     for(let ordinal=1;ordinal<=quantity;ordinal++)members.push({id:sourceRow+':'+ordinal,sourceRow,ordinal,name,section,type:kind,analysis,lift,weld:''});
   }
   return{members,apiRows,quantities,skippedName,skippedQuantity,invalidDates};
 }
 
-function validApiUrl(value){const url=new URL(value);if(url.protocol!=='https:'||url.hostname!=='script.google.com'||!/^\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(url.pathname))throw Error('請填Apps Script部署後的https://script.google.com/macros/s/…/exec網址');return url;}
-function sheetApiJsonp(endpoint,action,payload){
-  const url=validApiUrl(endpoint),callback='_steelApi_'+Date.now()+'_'+Math.random().toString(36).slice(2);
-  url.searchParams.set('action',action);url.searchParams.set('callback',callback);url.searchParams.set('_ts',String(Date.now()));if(payload)url.searchParams.set('payload',JSON.stringify(payload));
-  if(action==='result')url.searchParams.set('requestId',payload.requestId);
-  if(url.href.length>7500)throw Error('單次寫回內容過長，請分次更新');
-  return new Promise((resolve,reject)=>{
-    const script=document.createElement('script');let timer;
-    const finish=()=>{clearTimeout(timer);script.remove();delete window[callback];};
-    window[callback]=data=>{finish();if(data?.ok)resolve(data);else reject(Error(data?.error||'API未回傳成功結果'));};
-    script.onerror=()=>{finish();reject(Error('無法連線；若剛才是寫回，請重新讀取確認，勿直接假定成功。'));};
-    timer=setTimeout(()=>{finish();reject(Error('未取得API確認；請重新讀取確認是否已寫回。'));},30000);
-    script.src=url.href;document.head.append(script);
-  });
-}
-async function sheetApiRequest(endpoint,action,payload){
-  if(action!=='write')return sheetApiJsonp(endpoint,action,payload);
-  const url=validApiUrl(endpoint),requestId=crypto.randomUUID();
-  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),30000);
-  try{await fetch(url.href,{method:'POST',mode:'no-cors',credentials:'omit',signal:controller.signal,headers:{'Content-Type':'text/plain;charset=UTF-8'},body:JSON.stringify({...payload,action:'write',requestId})});}catch{throw Error('未取得寫回回應，請重新讀取確認，不直接假定成功。');}finally{clearTimeout(timer);}
-  for(let attempt=0;attempt<15;attempt++){
-    const receipt=await sheetApiJsonp(endpoint,'result',{requestId});if(!receipt.pending)return receipt;
-    await new Promise(resolve=>setTimeout(resolve,800));
-  }
-  throw Error('未取得寫回確認，請重新讀取確認資料，勿直接假定成功。');
-}
-
 const get=id=>document.getElementById(id),fmt=value=>Number(value).toLocaleString('zh-TW'),dateText=value=>value?value.replaceAll('-','/'):'—';
 const svgNode=(name,attributes={},value)=>{const node=document.createElementNS('http://www.w3.org/2000/svg',name);for(const [key,item] of Object.entries(attributes))node.setAttribute(key,item);if(value!==undefined)node.textContent=value;return node;};
 const FIELDS=['完整名稱','分區','樓層／節次','大梁方向(G/B)','小梁方向(X/Y)','流水號','構件類型','構件代碼','未拆分尾碼','出現次數','標示數量合計','完成日'];
-const PAGE=18,button=get('google-read');let state=null,section='all',query='',type='all',page=0,editing=null;
+const PAGE=18;let state=null,documentData=null,fileName='構件進度.json',fileHandle=null,dirty=false,section='all',query='',type='all',page=0,editing=null;
 get('filter-column').replaceChildren(...FIELDS.map(field=>new Option(field,field)));
 get('asof').textContent=dateText(TODAY);
 function members(){return(state?.members||[]).filter(member=>section==='all'||member.section===section);}
@@ -100,7 +72,7 @@ function renderMembers(list){
 }
 function renderChart(list,done){
   const svg=get('s-chart'),width=Math.max(320,svg.clientWidth||800),height=310,left=58,right=28,top=28,bottom=42;svg.setAttribute('viewBox',`0 0 ${width} ${height}`);svg.replaceChildren();
-  if(!state){get('chart-note').textContent='等待 Google Sheet 資料';return;}
+  if(!state){get('chart-note').textContent='等待 JSON 資料';return;}
   const dates=[...new Set(done.map(member=>member.lift))].sort(),day=86400000,end=Date.parse(TODAY),start=Math.min(end,...dates.map(date=>Date.parse(date)))-day,span=Math.max(day,end-start),max=Math.max(list.length,1);
   const x=value=>left+(Date.parse(value)-start)/span*(width-left-right),y=value=>top+(max-value)/max*(height-top-bottom);
   for(let index=0;index<=4;index++){const count=Math.round(max*index/4),vertical=y(count);svg.append(svgNode('line',{x1:left,y1:vertical,x2:width-right,y2:vertical,stroke:'#e5edf2'}),svgNode('text',{x:left-12,y:vertical+4,'text-anchor':'end',fill:'#7c929f','font-size':12},fmt(count)));}
@@ -109,38 +81,61 @@ function renderChart(list,done){
   get('chart-note').textContent=`截至 ${dateText(TODAY)}，已完成吊裝 ${fmt(done.length)} 件；尚餘 ${fmt(list.length-done.length)} 件`;
 }
 function openDateEditor(member){
-  const source=state?.apiRows?.[member.sourceRow];if(!source){get('status').textContent='找不到此構件的來源列，請更新資料。';return;}
+  const source=state?.apiRows?.[member.sourceRow];if(!source){get('status').textContent='找不到此構件的來源列，請重新開啟 JSON。';return;}
   editing={...source};get('date-title').textContent=member.name;
   const quantity=state.quantities[member.sourceRow];
-  get('date-note').textContent=quantity>1?`此編號的標示數量為 ${quantity}；填寫日期會套用來源列的全部標示單位。`:'日期會寫回此編號的 Google Sheet 來源列。';
+  get('date-note').textContent=quantity>1?`此編號的標示數量為 ${quantity}；填寫日期會套用來源列的全部標示單位。`:'日期會套用到此編號的來源列。';
   get('date-input').value=source.values['完成日']||'';get('date-status').textContent='';get('date-dialog').showModal();
 }
 get('date-cancel').onclick=()=>get('date-dialog').close();
-get('date-save').onclick=async()=>{
+get('date-save').onclick=()=>{
   if(!editing)return;
-  const save=get('date-save');save.disabled=true;let written=false;
   try{
     const completed=dateValue(get('date-input').value,true);
-    get('date-status').textContent='寫回中…';
-    await sheetApiRequest(SHEET_API_URL,'write',{rowNumber:editing.rowNumber,name:editing.name,version:editing.version,changes:{'完成日':completed}});
-    written=true;await readRemote();get('date-dialog').close();get('status').textContent='完成日已寫回 Google Sheet，並重新讀取最新資料。';
-  }catch(error){get('date-status').textContent=(written?'已寫回，但重新讀取未完成：':'未完成寫回確認：')+error.message;}
-  finally{save.disabled=false;}
+    const row=documentData.rows.find(item=>item.rowNumber===editing.rowNumber);
+    if(!row)throw Error('來源列不存在，請重新開啟 JSON');
+    row.values['完成日']=completed?completed.replaceAll('-','/'):'';
+    state=simpleSheetToState(documentData);dirty=true;get('save-json').disabled=false;
+    get('source').textContent=fileName+' · 尚未儲存';get('date-dialog').close();get('status').textContent='完成日已修改；請按「儲存 JSON」。';render();
+  }catch(error){get('date-status').textContent=error.message;}
 };
-async function readRemote(){
-  button.disabled=true;button.textContent='讀取中…';get('status').textContent='正在讀取 Google Sheet…';
+function loadJson(text,name,handle=null){
+  if(dirty&&!confirm('目前的修改尚未儲存，確定開啟另一個 JSON？'))return;
   try{
-    const endpoint=validApiUrl(SHEET_API_URL).href,data=await sheetApiRequest(endpoint,'read');state=simpleSheetToState(data);section='all';page=0;
+    const data=JSON.parse(text),next=simpleSheetToState(data);
+    documentData=data;state=next;fileName=name;fileHandle=handle;dirty=false;section='all';page=0;
     const selector=get('section');selector.replaceChildren(new Option('全案','all'));for(const value of [...new Set(state.members.map(member=>member.section))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true})))selector.add(new Option(value,value));
     const types=get('type-filter');types.replaceChildren(new Option('全部類型','all'));for(const value of [...new Set(state.members.map(member=>member.type))].sort())types.add(new Option(value,value));type='all';
-    get('source').textContent=`Google Sheet · ${data.sheetName} · 已更新`;get('status').textContent='已讀取最新構件進度。'+(state.skippedName?` ${state.skippedName} 列缺少完整名稱，未計入件數。`:'')+(state.skippedQuantity?` ${state.skippedQuantity} 列數量未填或無法辨識，未計入件數。`:'')+(state.invalidDates?` ${state.invalidDates} 列完成日格式無法辨識，暫不列入已完成。`:'');render();
-  }catch(error){get('source').textContent=state?'更新失敗 · 顯示上次資料':'Google Sheet 讀取失敗';get('status').textContent=`讀取未完成：${error.message}`;}
-  finally{button.disabled=false;button.textContent='從 Google Sheet 更新';}
+    get('source').textContent=fileName;get('save-json').disabled=false;
+    get('status').textContent='已開啟 JSON。'+(state.skippedName?` ${state.skippedName} 列缺少完整名稱，未計入件數。`:'')+(state.skippedQuantity?` ${state.skippedQuantity} 列數量未填或無法辨識，未計入件數。`:'')+(state.invalidDates?` ${state.invalidDates} 列完成日格式無法辨識，暫不列入已完成。`:'');render();
+  }catch(error){get('status').textContent='無法開啟 JSON：'+error.message;}
 }
-button.onclick=readRemote;get('section').onchange=event=>{section=event.target.value;page=0;render();};
+get('open-json').onclick=async()=>{
+  if(window.showOpenFilePicker){
+    try{const [handle]=await showOpenFilePicker({types:[{description:'JSON',accept:{'application/json':['.json']}}],multiple:false});const file=await handle.getFile();loadJson(await file.text(),file.name,handle);return;}
+    catch(error){if(error.name==='AbortError')return;}
+  }
+  get('json-file').click();
+};
+get('json-file').onchange=async event=>{const file=event.target.files[0];if(file)loadJson(await file.text(),file.name);event.target.value='';};
+get('save-json').onclick=async()=>{
+  if(!documentData)return;
+  const text=JSON.stringify(documentData,null,2)+'\n';
+  try{
+    if(fileHandle&&fileHandle.createWritable){const stream=await fileHandle.createWritable();await stream.write(text);await stream.close();dirty=false;get('source').textContent=fileName;get('status').textContent='已儲存 JSON：'+fileName;return;}
+    if(window.showSaveFilePicker){
+      try{const handle=await showSaveFilePicker({suggestedName:fileName,types:[{description:'JSON',accept:{'application/json':['.json']}}]});const stream=await handle.createWritable();await stream.write(text);await stream.close();fileHandle=handle;dirty=false;get('source').textContent=fileName;get('status').textContent='已儲存 JSON：'+fileName;return;}
+      catch(error){if(error.name==='AbortError')return;}
+    }
+    const blob=new Blob([text],{type:'application/json'}),url=URL.createObjectURL(blob),anchor=document.createElement('a');anchor.href=url;anchor.download=fileName;anchor.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+    get('status').textContent='已下載 JSON，請用新檔取代原檔。';dirty=false;get('source').textContent=fileName;
+  }catch(error){get('status').textContent='儲存未完成：'+error.message;}
+};
+get('section').onchange=event=>{section=event.target.value;page=0;render();};
 get('search').oninput=event=>{query=event.target.value;page=0;renderMembers(members());};get('type-filter').onchange=event=>{type=event.target.value;page=0;renderMembers(members());};get('show-analysis').onchange=()=>renderMembers(members());
 get('filter-column').onchange=()=>{page=0;renderMembers(members());};
 get('prev').onclick=()=>{page--;renderMembers(members());};get('next').onclick=()=>{page++;renderMembers(members());};
 new ResizeObserver(()=>renderChart(members(),members().filter(member=>member.lift&&member.lift<=TODAY))).observe(get('s-chart'));
-render();readRemote();
+window.addEventListener('beforeunload',event=>{if(dirty){event.preventDefault();event.returnValue='';}});
+render();
 </script></body></html>
