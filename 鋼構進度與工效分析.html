@@ -1,0 +1,547 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="鋼構構件進度、預計與實際累計 S 曲線、吊裝批次與加權工效分析"><title>鋼構進度與吊裝工效</title><style>:root{font:16px system-ui,'Microsoft JhengHei',sans-serif;color:#23394b;background:#f2f5f7;font-synthesis:none}*{box-sizing:border-box}body{margin:0}button,input,select,.button{font:inherit}button,.button{display:inline-flex;align-items:center;justify-content:center;background:#fff;border:1px solid #d5dfe6;border-radius:7px;color:#324b5e;padding:9px 14px;font-size:.875rem;cursor:pointer;white-space:nowrap}button:hover,.button:hover{background:#eef4f8}button.primary{background:#1f536a;border-color:#1f536a;color:#fff}button:disabled{opacity:.4;cursor:default}button:focus-visible,input:focus-visible,select:focus-visible,.button:focus-within{outline:3px solid #5c9bd1;outline-offset:2px}input:not([type=checkbox]),select{min-width:0;max-width:100%;border:1px solid #d5dfe6;border-radius:6px;background:#fff;color:#23394b;padding:9px 10px;font-size:.875rem}input[type=number]{width:90px}input[type=checkbox]{accent-color:#20637a;width:16px;height:16px}select{appearance:none;padding-right:30px;background-image:url("data:image/svg+xml,%3Csvg width='10' height='6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%235a7487' fill='none'/%3E%3C/svg%3E");background-position:right 10px center;background-repeat:no-repeat}label:not(.button):not(.check){display:flex;flex-direction:column;gap:7px;font-size:.875rem;color:#587083}header{background:#fff;border-bottom:1px solid #dce4e9;padding:22px 4vw;display:flex;justify-content:space-between;align-items:center;gap:20px}.identity{display:flex;align-items:center;gap:13px}.logo{background:#1d4a60;color:#fff;display:grid;place-items:center;width:43px;height:43px;border-radius:10px;font-size:28px}h1{font-size:1.2rem;letter-spacing:.025em;margin:0;font-weight:600}.identity p{font-size:.8rem;color:#6f8696;margin:5px 0 0}.actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.source{font-size:.8rem;color:#8b6725;background:#fff4dd;border-radius:5px;padding:5px 9px}.page{max-width:1440px;margin:auto;padding:28px 4vw 15px}.scope{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:22px}.scope>div:first-child{display:flex;align-items:center;gap:14px}.scope select{font-size:1rem;border:none;background-color:transparent;font-weight:600;padding-left:0}.eyebrow{font-size:.8rem;color:#6b8190;letter-spacing:.05em}.scope-note{text-align:right;font-size:.8rem;color:#748795;line-height:1.7}.scope-note strong{color:#35546b;font-weight:500}.stats{display:grid;grid-template-columns:repeat(4,1fr);background:#fff;border:1px solid #e0e7ec;border-radius:12px;padding:24px 0;margin-bottom:28px}.stats>div{padding:0 26px;border-right:1px solid #e4ebef;display:flex;flex-direction:column;gap:9px}.stats>div:last-child{border-right:0}.stats span{font-size:.875rem;color:#647d8d}.stats strong{font-size:2.3rem;font-weight:500;font-variant-numeric:tabular-nums;letter-spacing:-.04em}.stats small{font-size:.8rem;color:#8395a2}.stat-progress strong{color:#217f85}.track{height:6px;background:#e8f0f1;border-radius:3px;margin-top:8px;overflow:hidden}.track i{display:block;height:100%;background:#36999c;border-radius:3px}nav{display:flex;gap:25px;border-bottom:1px solid #d9e3e9;margin-bottom:24px}nav button{border:0;border-bottom:3px solid transparent;border-radius:0;background:transparent;padding:13px 0;font-size:.95rem;color:#708493}nav button[aria-selected=true]{border-color:#1e647a;color:#204d63;font-weight:600}nav button:hover{background:transparent}.panel{background:#fff;border:1px solid #e0e7ec;border-radius:11px;margin-bottom:22px;padding:24px;min-width:0}.panel-heading{display:flex;justify-content:space-between;gap:15px;align-items:center;margin-bottom:20px}h2{margin:0;font-size:1rem;font-weight:600;color:#2b485e}h3{font-size:.9rem;font-weight:600;margin:24px 0 14px}.panel-heading p,.connection p{font-size:.8rem;color:#7c91a0;margin:7px 0 0;line-height:1.6}.chart-legend{display:flex;align-items:center;gap:16px;flex-wrap:wrap;font-size:.8rem;color:#5b7486}.chart-legend span{display:flex;align-items:center;gap:7px}.chart-legend i{width:20px;height:3px;background:#347aa6}.chart-legend i.planned{background:repeating-linear-gradient(90deg,#3a9b91 0 6px,transparent 6px 9px)}#s-chart{display:block;width:100%;height:310px;overflow:visible}.chart-bottom{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;border-top:1px solid #edf1f4;padding-top:15px;margin-top:8px;color:#8295a2;font-size:.8rem}#plan-gap{color:#446b83}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;text-align:left;font-size:.875rem}th{color:#7b8f9d;font-weight:500;background:#f7f9fb}th,td{padding:14px 12px;border-bottom:1px solid #e9eef2;white-space:nowrap}tbody tr:last-child td{border-bottom:0}.member-id{font-weight:500;color:#294e68;font-variant-numeric:tabular-nums}.type-badge{font-size:.75rem;margin-left:9px;color:#668092;background:#edf3f6;padding:3px 6px;border-radius:4px}.type-badge.unknown{color:#8c6a2d;background:#fbf2df}.empty-date{color:#a0aeb8}td.analysis{max-width:380px;white-space:normal;color:#738b9d;font-size:.8rem}.table-controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.check{display:flex;align-items:center;gap:6px;font-size:.8rem;color:#6b8191;white-space:nowrap}.table-controls input:not([type=checkbox]){width:150px}.pagination{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-top:20px;font-size:.8rem;color:#708897}.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.two-columns{display:grid;grid-template-columns:1.25fr 1fr;gap:22px}.muted{font-size:.8rem;color:#7a8f9e;line-height:1.8}.tag{font-size:.75rem;color:#58828c;background:#eef6f6;padding:5px 9px;border-radius:5px}.fields{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:22px 0}.fields input{width:100%}.forecast{background:linear-gradient(140deg,#f5fafb,#fff 70%)}.forecast h2{margin-top:10px}.forecast-value{font-size:2.5rem;color:#215c72;margin-top:24px;font-variant-numeric:tabular-nums}#forecast-days{color:#6b8999;margin:4px 0 22px;font-size:.875rem}.forecast-facts>div{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #e4edef;padding:10px 0;font-size:.8rem;color:#7a909b}.forecast-facts strong{color:#3f6576;font-weight:500}.notice{font-size:.8rem;background:#f4f0e8;color:#8b744b;padding:12px;border-radius:5px;line-height:1.75}.rules{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;font-size:.875rem}.rules span{background:#f4f7fa;padding:12px;border-radius:5px;color:#698195}.rules b{display:block;font-weight:500;color:#2f566b;margin-bottom:5px}details{font-size:.875rem;color:#6b8494;line-height:1.8;margin-top:18px}summary{cursor:pointer;color:#43687d}details p{font-size:.8rem}.connection{border-top:1px solid #dbe5eb;padding:28px 0;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}.connection h2{margin-top:7px}.connection details{flex-basis:100%;margin:0}footer{border-top:1px solid #dbe5eb;display:flex;justify-content:space-between;align-items:center;gap:15px;padding:18px 0;color:#728a9b;font-size:.8rem}[hidden]{display:none!important}#days-body input{width:110px}#days-body td{font-variant-numeric:tabular-nums}#rates-body input{width:70px}#rates-body th,#rates-body td{padding:12px 8px}#plan-rows input{width:160px}#plan-editor .row{margin-top:16px}@media(max-width:1100px){.page{padding:22px 24px}header{padding:18px 24px}.two-columns{grid-template-columns:1fr}.panel-heading{align-items:start;flex-wrap:wrap}.stats>div{padding:0 20px}}@media(max-width:700px){header{flex-wrap:wrap}.page{padding:20px 14px}.stats{grid-template-columns:1fr 1fr;gap:24px 0}.stats>div:nth-child(2){border-right:0}.stats strong{font-size:2rem}.panel{padding:18px 14px}.scope-note{font-size:.75rem}.scope>div:first-child{gap:7px;flex-wrap:wrap}.chart-legend{gap:10px}.table-controls{gap:8px}.rules{grid-template-columns:1fr 1fr}.fields{grid-template-columns:1fr}.chart-bottom{line-height:1.7}#s-chart{height:280px}.actions{gap:5px}.forecast-value{font-size:2rem}}@media print{header .actions,nav,.connection,footer button,.table-controls,.pagination button,#plan-editor{display:none}.page{padding:0}.panel{break-inside:avoid}}
+
+.schedule-fields{grid-template-columns:repeat(3,minmax(0,1fr))}.schedule-fields input{width:100%}#actual-lift-rows input{width:160px}.chart-legend .revised{background:repeating-linear-gradient(90deg,#bd8335 0 5px,transparent 5px 8px)}@media(max-width:700px){.schedule-fields{grid-template-columns:1fr}#actual-lift-rows input{width:120px}}
+</style></head><body>
+<header><div class="identity"><span class="logo">▥</span><div><h1>鋼構施工分析</h1><p>構件進度與吊裝工效</p></div></div><div class="actions"><span id="source" class="source">示範資料</span><label class="button">匯入構件 CSV<input id="import" type="file" accept=".csv" hidden></label><button id="backup">匯出分析備份</button><label class="button">還原備份<input id="restore" type="file" accept=".json" hidden></label></div></header>
+<div class="page"><div class="scope"><div><span class="eyebrow">施工節次</span><select id="section" aria-label="施工節次"><option value="all">全案</option></select></div><div class="scope-note">統計截至 <strong id="asof"></strong><br><span id="save-note">資料儲存在目前瀏覽器</span></div></div>
+<section class="stats" aria-label="構件進度摘要"><div><span>構件數</span><strong id="total">0</strong><small>納入目前節次</small></div><div><span>已完成吊裝</span><strong id="completed">0</strong><small id="completion-rate">—</small></div><div><span>剩餘數</span><strong id="remaining">0</strong><small>尚未完成吊裝</small></div><div class="stat-progress"><span>吊裝完成率</span><strong id="percent">0%</strong><div class="track"><i id="progress-fill"></i></div></div></section>
+<nav role="tablist" aria-label="分析頁面"><button id="tab-progress" role="tab" aria-controls="panel-progress" aria-selected="true">構件進度</button><button id="tab-settings" role="tab" aria-controls="panel-settings" aria-selected="false">吊裝工效設定</button></nav>
+<section id="panel-progress" role="tabpanel" aria-labelledby="tab-progress"><section class="panel chart-panel"><div class="panel-heading"><div><h2>預計與實際累計進度</h2><p>累計 S 曲線 · 預計值由使用者輸入</p></div><div class="chart-legend"><span><i class="actual"></i>實際吊裝</span><span><i class="planned"></i>預計累計</span><button id="edit-plan">編輯預計曲線</button></div></div><svg id="s-chart" role="img" aria-label="日期與累計構件數的預計及實際 S 曲線"></svg><div class="chart-bottom"><span id="plan-gap"></span><span>預計點間採線性連接；實際線僅畫至統計日</span></div></section>
+<section id="plan-editor" class="panel" hidden><div class="panel-heading"><div><h2>每日吊數自動推估</h2><p id="plan-scope"></p></div><button id="close-plan">收合</button></div><div class="fields schedule-fields"><label>起始日期<input id="schedule-start" placeholder="YYYYMMDD" aria-label="起始日期"></label><label>每天預計吊數<input id="schedule-lifts" type="number" min="1" max="10000" step="1" aria-label="每天預計吊數"></label><label>施工日<select id="schedule-week"><option value="7">每天施工（含週末）</option><option value="6">週一至週六</option><option value="5">週一至週五</option></select></label></div><p class="muted">柱／大梁固定1件／吊；小梁／側撐依「吊裝工效設定」的每吊件數分批。只需設定一次，系統自動畫到全部吊完。</p><button id="save-schedule" class="primary">產生預計曲線及剩餘推估</button><div id="schedule-summary" class="notice" aria-live="polite"></div><details><summary>補登實際吊數（選填）</summary><p>只填已有實際吊數的日期，不必每日填寫。填同一天的總吊數，系統先扣已對應安裝構件的吊次，避免重複扣除。僅有吊數而無構件明細的部分，依剩餘批次折算為推估件數，不改寫實際完成數。</p><div class="table-wrap"><table><thead><tr><th>日期</th><th>實際總吊數</th><th></th></tr></thead><tbody id="actual-lift-rows"></tbody></table></div><div class="row"><button id="add-actual-lift">新增實際日期</button><button id="save-actual-lifts" class="primary">儲存實際吊數並重算</button></div></details><details><summary>舊版逐日累計資料（可選，不必填）</summary><div class="table-wrap"><table><thead><tr><th>預計日期</th><th>預計累計構件數</th><th></th></tr></thead><tbody id="plan-rows"></tbody></table></div><div class="row"><button id="add-plan">新增日期</button><button id="save-plan">改用手動預計曲線</button></div></details></section>
+<section class="panel"><div class="panel-heading"><div><h2>構件明細</h2><p>每列代表一個實體構件；同名構件不自動合併</p></div><div class="table-controls"><label class="check"><input id="show-analysis" type="checkbox">顯示分析編號</label><input id="search" placeholder="搜尋構件編號" aria-label="搜尋構件編號"><select id="type-filter" aria-label="構件類型"><option value="all">全部類型</option></select></div></div><div class="table-wrap"><table id="members-table"><thead id="members-head"></thead><tbody id="members-body"></tbody></table></div><div class="pagination"><span id="table-count"></span><div class="row"><button id="prev">上一頁</button><span id="page-number"></span><button id="next">下一頁</button></div></div></section></section>
+<section id="panel-settings" role="tabpanel" aria-labelledby="tab-settings" hidden><div class="two-columns"><section class="panel"><div class="panel-heading"><div><h2>每吊標準時間</h2><p>單位：分鐘／吊；每種批次時間可獨立設定</p></div><span class="tag">可調整</span></div><div class="table-wrap"><table><thead><tr><th>類型</th><th>一吊1件</th><th>一吊2件</th><th>一吊3件</th><th>單件權重</th></tr></thead><tbody id="rates-body"></tbody></table></div><p class="muted">柱30分、大梁20分、小梁10分採你的初值。小梁2／3件同吊暫設每吊10分，請按實際調整；側撐等時間留空待填。</p><div class="fields"><label>權重基準（標準分鐘）<input id="reference" type="number" min="1" step="1"></label><label>每日預估可作業分鐘<input id="daily-minutes" type="number" min="1" step="1"></label></div><div class="row"><button id="save-rates" class="primary">套用工效設定</button><span class="muted">每日初值420分是排程假設</span></div></section>
+<section class="panel forecast"><span class="eyebrow">目前節次 · 剩餘工作量推估</span><h2>還需要多少吊裝時間？</h2><div class="forecast-value" id="forecast-hours">—</div><p id="forecast-days"></p><div class="forecast-facts"><div><span>標準剩餘作業時間</span><strong id="forecast-standard">—</strong></div><div><span>實際工效校準係數</span><strong id="forecast-factor">—</strong></div><div><span>全案有效校準日</span><strong id="forecast-samples">—</strong></div></div><p id="forecast-note" class="notice"></p><h3>未完成件的預計每吊件數</h3><div class="fields"><label>小梁<select id="small-batch"><option value="1">1件／吊</option><option value="2">2件／吊</option><option value="3">3件／吊</option></select></label><label>側撐<select id="brace-batch"><option value="1">1件／吊</option><option value="2">2件／吊</option><option value="3">3件／吊</option></select></label></div><p class="muted">按類型分批，不足一批依剩餘件數計時。不含電銲、非吊裝工序及日曆休假。</p></section></div>
+<section class="panel"><div class="panel-heading"><div><h2>每日吊裝工效</h2><p>全案每日實績 · 實際作業分鐘須填入同一作業範圍</p></div><span class="tag">加權與批次分開計算</span></div><div class="table-wrap"><table><thead><tr><th>吊裝日期</th><th>完成件數</th><th>實際吊次</th><th>等效構件數</th><th>平均權重</th><th>批次標準分鐘</th><th>實際作業分鐘</th><th>等效件／時</th><th>校準係數</th></tr></thead><tbody id="days-body"></tbody></table></div><div class="row"><button id="save-days" class="primary">儲存實際作業時間</button><span class="muted">缺吊次或標準時間的日期，不納入校準</span></div><details><summary>查看計算方法</summary><p>單件權重＝單件標準分鐘 ÷ 權重基準。等效構件數＝各件權重加總，平均權重＝等效構件數 ÷ 完成件數。等效件／時＝等效構件數 ÷ 實際作業時數。</p><p>校準係數＝有效日批次標準分鐘總和 ÷ 有效日實際作業分鐘總和。剩餘工時＝按預計每吊件數計算的剩餘標準分鐘 ÷ 校準係數 ÷ 60。這樣不會把同吊多件的效率重複折算。</p><p>此處為單一吊裝資源或共同統計範圍；多吊車需後續增加資源欄位分開計算。</p></details></section>
+<section class="panel"><h2>編號分類規則</h2><p class="muted">沿用先前 CAD 匯出規則；辨識失敗保留待確認，不自動套入工期。</p><div class="rules"><span><b>G／B</b>大梁（完整5～6碼）</span><span><b>X／Y</b>小梁（完整5～6碼）</span><span><b>CX…Y…</b>柱</span><span><b>L／WL</b>側撐</span><span><b>BU</b>BRB另列</span><span><b>AV</b>塔吊補強另列</span></div><p class="muted">前置分區＋數字＋類型碼，依整個編號位置解析。短號 G13／B10 不當鋼梁；節次採資料欄位，不用編號數字猜施工節次。Google Sheet 若提供「構件類型」，以明示類型優先。</p></section></section>
+<section class="connection"><div><span class="eyebrow">資料來源</span><h2>Google Sheet 接入準備</h2><p>目前未連接 Google Sheet。先用示範或 CSV 確認分析方式，再接入你的試算表。</p></div><div class="row"><select id="template-kind" aria-label="欄位範本類型"><option value="members">構件資料</option><option value="daily">每日作業</option><option value="plans">預計曲線</option></select><button id="template">下載欄位範本</button></div><div class="row"><label class="button">匯入每日作業 CSV<input id="import-daily" type="file" accept=".csv" hidden></label><label class="button">匯入預計曲線 CSV<input id="import-plans" type="file" accept=".csv" hidden></label></div><details><summary>建議試算表分頁與欄位</summary><p><b>構件資料：</b>構件ID、節次、構件編號、構件類型（可空白自動辨識）、吊裝完成日期、電銲完成日期、吊次編號。</p><p><b>每日作業：</b>吊裝日期、實際吊裝分鐘。小梁或側撐若一吊多件，同一吊次的各列填相同吊次編號；單件吊裝也可填獨立吊次編號。</p><p><b>預計曲線：</b>節次（全案或節次）、日期、預計累計數。節次欄先作為分類資料，不混同樓層。</p><p>連線方式待提供實際 Sheet 後確認；不需要為了試作先把工程資料公開。</p></details></section>
+<footer><span id="status" role="status" aria-live="polite">示範資料，尚非工程實績。</span><button id="reset">重設示範</button></footer></div><script type="module">const TYPES=['柱','大梁','小梁','側撐','BRB','塔吊補強','待確認'];
+const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
+const TODAY=['year','month','day'].map(type=>parts.find(part=>part.type===type).value).join('-');
+function dateValue(input,optional=false){
+  const raw=String(input??'').trim();if(!raw&&optional)return '';
+  const compact=raw.match(/^(\d{4})(\d{2})(\d{2})$/);
+  const text=compact?`${compact[1]}-${compact[2]}-${compact[3]}`:raw.replaceAll('/','-');
+  const date=new Date(text+'T12:00:00Z');
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(text)||Number.isNaN(date.getTime())||date.toISOString().slice(0,10)!==text)throw Error('無效日期：'+raw);
+  return text;
+}
+function classify(raw,explicit=''){
+  const name=String(raw??'').trim().toUpperCase();
+  let type='待確認',analysis='',section='';
+  const match=name.match(/^([A-Z]+)(\d+)(.+)$/);
+  if(/^AV[A-Z]*\d/.test(name)){type='塔吊補強';analysis='AV｜塔吊補強';}
+  else if(match){
+    const [,area,level,tail]=match;section=String(Number(level));
+    if(/^[BG]\d+$/.test(tail)&&name.length>=5&&name.length<=6)type='大梁';
+    else if(/^[XY]\d+$/.test(tail)&&name.length>=5&&name.length<=6)type='小梁';
+    else if(/^C[X]\d+Y\d+$/.test(tail))type='柱';
+    else if(/^(WL|L)\d+$/.test(tail))type='側撐';
+    else if(/^BU([XY])?\d+$/.test(tail))type='BRB';
+    analysis=`${area}區｜編號段 ${level}｜${tail}｜${type}`;
+  } else analysis='不符合已知完整編號規則';
+  if(explicit){if(!TYPES.includes(explicit))throw Error('不支援的構件類型：'+explicit);type=explicit;analysis+='｜資料指定：'+explicit;}
+  return {name,type,analysis,section};
+}
+function initialSettings(){return{reference:20,minutesPerDay:420,plannedBatch:{柱:1,大梁:1,小梁:2,側撐:2,BRB:1,塔吊補強:1,待確認:1},rates:{柱:[null,30,null,null],大梁:[null,20,null,null],小梁:[null,10,10,10],側撐:[null,null,null,null],BRB:[null,null,null,null],塔吊補強:[null,null,null,null],待確認:[null,null,null,null]}};}
+function minutes(settings,type,size=1){const value=settings.rates[type]?.[size];return typeof value==='number'&&Number.isFinite(value)&&value>0?value:null;}
+function normalizeMembers(rows){
+  const ids=new Set();return rows.map((row,index)=>{
+    const id=String(row['構件ID']||'').trim(),name=String(row['構件編號']||row.Name||'').trim(),section=String(row['節次']||'').trim();
+    if(!id||!name||!section)throw Error(`第 ${index+2} 列缺少構件ID、節次或構件編號`);
+    if(ids.has(id))throw Error('構件ID重複：'+id);ids.add(id);
+    const lift=dateValue(row['吊裝完成日期'],true),weld=dateValue(row['電銲完成日期'],true);
+    if(weld&&(!lift||weld<lift))throw Error('電銲日期早於吊裝日期或缺少吊裝日期：'+id);
+    const explicit=String(row['構件類型']||'').trim();
+    return{id,...classify(name,explicit),name,section,explicit,lift,weld,batch:String(row['吊次編號']||'').trim()};
+  });
+}
+function validatePlan(rows,total){
+  const sorted=rows.map(row=>({date:dateValue(row.date),count:Number(row.count)})).sort((left,right)=>left.date.localeCompare(right.date));
+  let previous=-1;const dates=new Set();
+  for(const row of sorted){if(!Number.isInteger(row.count)||row.count<0||row.count>total||row.count<previous||dates.has(row.date))throw Error('預計累計數須為不超過總件數的遞增整數，日期不可重複');previous=row.count;dates.add(row.date);}
+  return sorted;
+}
+function interpolatePlan(plan,date){
+  if(!plan.length||date<plan[0].date)return null;
+  if(date>=plan.at(-1).date)return plan.at(-1).count;
+  const upper=plan.findIndex(point=>point.date>date),left=plan[upper-1],right=plan[upper];
+  const fraction=(Date.parse(date)-Date.parse(left.date))/(Date.parse(right.date)-Date.parse(left.date));
+  return left.count+(right.count-left.count)*fraction;
+}
+function validateSchedule(input){
+  const startDate=dateValue(input.startDate),dailyLifts=Number(input.dailyLifts),workweek=Number(input.workweek??7);
+  if(!Number.isInteger(dailyLifts)||dailyLifts<1||dailyLifts>10000)throw Error('每天預計吊數須為1～10000的整數');
+  if(![5,6,7].includes(workweek))throw Error('施工週設定不正確');
+  return{startDate,dailyLifts,workweek};
+}
+function shiftDate(date,days){return new Date(Date.parse(date)+days*86400000).toISOString().slice(0,10);}
+function liftQueue(members,settings){
+  const groups=new Map(),queue=[];
+  for(const member of members){const key=JSON.stringify([member.section,member.type]);if(!groups.has(key))groups.set(key,{type:member.type,items:[]});groups.get(key).items.push(member);}
+  for(const {type,items}of groups.values()){
+    const size=['小梁','側撐'].includes(type)?Number(settings.plannedBatch[type]||1):1;
+    if(![1,2,3].includes(size))throw Error('每吊件數須為1～3');
+    for(let offset=0;offset<items.length;offset+=size){const batch=items.slice(offset,offset+size);queue.push({size:batch.length,ids:batch.map(member=>member.id)});}
+  }
+  return queue;
+}
+function curveFromQueue(queue,startDate,initialCount,config){
+  const points=[{date:shiftDate(startDate,-1),count:initialCount}];let offset=0,count=initialCount,date=startDate,workingDays=0;
+  for(let elapsed=0;offset<queue.length;elapsed++,date=shiftDate(date,1)){
+    if(elapsed>100000)throw Error('推估期間過長，請提高每日預計吊數');
+    const weekday=new Date(date+'T12:00:00Z').getUTCDay();
+    if(config.workweek===6&&weekday===0||config.workweek===5&&(weekday===0||weekday===6))continue;
+    for(let index=0;index<config.dailyLifts&&offset<queue.length;index++)count+=queue[offset++].size;
+    points.push({date,count});workingDays++;
+  }
+  return{points,workingDays,finishDate:points.at(-1).date};
+}
+function automaticSchedule(members,settings,input,reports={},asOf=TODAY){
+  const config=validateSchedule(input),installed=members.filter(member=>member.lift&&member.lift<=asOf),pending=members.filter(member=>!member.lift||member.lift>asOf);
+  const original=curveFromQueue(liftQueue(members,settings),config.startDate,0,config);
+  const queue=liftQueue(pending,settings),warnings=[];let extraLifts=0,inferredCount=0;
+  const byDate=new Map();for(const member of installed){if(!byDate.has(member.lift))byDate.set(member.lift,[]);byDate.get(member.lift).push(member);}
+  for(const [date,value]of Object.entries(reports).sort(([left],[right])=>left.localeCompare(right))){
+    dateValue(date);if(!Number.isInteger(value)||value<0)throw Error('實際吊數須為非負整數');if(date>asOf)continue;
+    const day=byDate.get(date)||[],known=new Set();let ambiguous=false;
+    for(const member of day){if(!member.batch&&['小梁','側撐'].includes(member.type))ambiguous=true;else known.add(member.batch||'single:'+member.id);}
+    if(ambiguous){warnings.push(`${date} 有已安裝小梁／側撐未填吊次編號，該日只扣已確認構件，未再折算吊數`);continue;}
+    if(value<known.size)warnings.push(`${date} 填寫吊數少於已記錄吊次，優先保留已安裝構件`);
+    extraLifts+=Math.max(0,value-known.size);
+  }
+  const appliedLifts=Math.min(extraLifts,queue.length);
+  const inferredIds=[];for(let index=0;index<appliedLifts;index++){inferredCount+=queue[index].size;inferredIds.push(...queue[index].ids);}
+  if(extraLifts>queue.length)warnings.push('填寫吊數超過可推估剩餘吊次，已限制在總構件數內');
+  if(pending.some(member=>member.type==='待確認'))warnings.push('待確認類型暫按1件／吊推估，請確認分類');
+  const outstanding=queue.slice(appliedLifts),baseline=installed.length+inferredCount,start=config.startDate>asOf?config.startDate:shiftDate(asOf,1);
+  const revised=curveFromQueue(outstanding,start,baseline,config);
+  revised.points=[{date:asOf,count:baseline},...revised.points.filter(point=>point.date>asOf)];
+  return{config,original:original.points,revised:revised.points,finishDate:outstanding.length?revised.finishDate:asOf,workingDays:revised.workingDays,installedCount:installed.length,inferredCount,inferredIds,appliedLifts,remainingLifts:outstanding.length,remainingCount:members.length-baseline,warnings};
+}
+function plannedWorkload(members,settings){
+  let cost=0;const missing=[];
+  for(const type of TYPES){
+    const count=members.filter(member=>member.type===type).length;if(!count)continue;
+    const size=['小梁','側撐'].includes(type)?Number(settings.plannedBatch[type]):1;
+    const full=Math.floor(count/size),tail=count%size;
+    for(const [quantity,number]of [[size,full],[tail,tail?1:0]]){
+      if(!number)continue;const rate=minutes(settings,type,quantity);
+      if(rate===null)missing.push(`${type}一吊${quantity}件`);else cost+=rate*number;
+    }
+  }
+  return{cost:missing.length?null:cost,knownCost:cost,missing:[...new Set(missing)]};
+}
+function analyzeDays(members,settings,actualMinutes,asOf=TODAY){
+  const dates=[...new Set(members.map(member=>member.lift).filter(date=>date&&date<=asOf))].sort();
+  return dates.map(date=>{
+    const day=members.filter(member=>member.lift===date),batches=new Map(),issues=[];
+    let equivalent=0,unknown=0;
+    for(const member of day){
+      const single=minutes(settings,member.type);if(single===null)unknown++;else equivalent+=single/settings.reference;
+      if(!member.batch&&['小梁','側撐'].includes(member.type)){issues.push('小梁／側撐缺吊次編號');continue;}
+      const key=member.batch||`single:${member.id}`;
+      if(!batches.has(key))batches.set(key,[]);batches.get(key).push(member);
+    }
+    let standard=0;
+    for(const group of batches.values()){
+      const type=group[0].type,size=group.length;
+      if(group.some(member=>member.type!==type)){issues.push('同一吊次混用不同類型');continue;}
+      if(size>1&&!['小梁','側撐'].includes(type)){issues.push('柱／大梁等類型須單件一吊');continue;}
+      const rate=minutes(settings,type,size);if(rate===null)issues.push('缺少批次標準分鐘');else standard+=rate;
+    }
+    if(unknown)issues.push('缺少單件標準分鐘或類型');
+    const actual=Number(actualMinutes[date]);const usable=Number.isFinite(actual)&&actual>0&&issues.length===0;
+    return{date,count:day.length,lifts:issues.length?null:batches.size,equivalent:unknown?null:equivalent,average:unknown?null:equivalent/day.length,standard:issues.length?null:standard,actual:actual>0?actual:null,factor:usable?standard/actual:null,perHour:usable?equivalent/(actual/60):null,issues:[...new Set(issues)]};
+  });
+}
+function forecast(allMembers,remaining,settings,actualMinutes,asOf=TODAY){
+  const days=analyzeDays(allMembers,settings,actualMinutes,asOf),valid=days.filter(day=>day.factor!==null);
+  const actual=valid.reduce((sum,day)=>sum+day.actual,0),standard=valid.reduce((sum,day)=>sum+day.standard,0);
+  const factor=actual>0?standard/actual:1,work=plannedWorkload(remaining,settings);
+  const duration=work.cost===null?null:work.cost/factor;
+  return{...work,factor,sampleDays:valid.length,duration,hours:duration===null?null:duration/60,days:duration===null?null:duration/settings.minutesPerDay};
+}
+function parseCsv(text){
+  const rows=[];let row=[],field='',quoted=false;
+  for(let index=0;index<text.length;index++){
+    const character=text[index];if(character==='"'){if(quoted&&text[index+1]==='"'){field+='"';index++;}else quoted=!quoted;}
+    else if(character===','&&!quoted){row.push(field);field='';}
+    else if((character==='\n'||character==='\r')&&!quoted){if(character==='\r'&&text[index+1]==='\n')index++;row.push(field);if(row.some(value=>value!==''))rows.push(row);row=[];field='';}else field+=character;
+  }
+  if(quoted)throw Error('CSV 引號未結束');if(field||row.length){row.push(field);rows.push(row);}
+  const header=rows.shift()?.map(value=>value.replace(/^\uFEFF/,'').trim());if(!header||new Set(header).size!==header.length)throw Error('CSV 標題列缺漏或重複');
+  return rows.map((values,index)=>{if(values.length!==header.length)throw Error(`CSV 第 ${index+2} 列欄數不符`);return Object.fromEntries(header.map((key,position)=>[key,values[position]]));});
+}
+function normalizeDaily(rows){
+  const result=Object.create(null),dates=new Set();
+  for(const row of rows){const date=dateValue(row['吊裝日期']),value=Number(row['實際吊裝分鐘']);if(dates.has(date))throw Error('每日作業日期重複：'+date);dates.add(date);if(String(row['實際吊裝分鐘']??'').trim()===''&&String(row['實際總吊數']??'').trim()!=='')continue;if(!Number.isFinite(value)||value<=0)throw Error('實際吊裝分鐘須為正數：'+date);result[date]=value;}
+  if(!rows.length)throw Error('每日作業 CSV 沒有資料');
+  return result;
+}
+function normalizeActualLifts(rows){const result=Object.create(null);for(const row of rows){if(String(row['實際總吊數']??'').trim()==='')continue;const date=dateValue(row['吊裝日期']),value=Number(row['實際總吊數']);if(!Number.isInteger(value)||value<0)throw Error('實際總吊數須為非負整數');if(date>TODAY)throw Error('實際吊數不可填未來日期');if(Object.hasOwn(result,date))throw Error('實際吊數日期重複');result[date]=value;}return result;}
+function normalizePlans(rows,members){
+  const result=Object.create(null),sections=new Set(members.map(member=>member.section));
+  for(const row of rows){const value=String(row['節次']||'').trim(),key=value==='全案'||value==='all'?'all':value;if(!key||key!=='all'&&!sections.has(key))throw Error('預計曲線節次不存在：'+value);if(String(row['預計累計數']??'').trim()==='')throw Error('預計累計數不可空白');result[key]??=[];result[key].push({date:row['日期'],count:row['預計累計數']});}
+  if(!rows.length)throw Error('預計曲線 CSV 沒有資料');
+  for(const key of Object.keys(result))result[key]=validatePlan(result[key],key==='all'?members.length:members.filter(member=>member.section===key).length);
+  return result;
+}
+function sample(){
+  const rows=[];for(let section=1;section<=8;section++){
+    const names=[`A${section}CX2Y1`,`A${section}CX3Y2`,`A${section}G01`,`A${section}G02`,`A${section}B01`,`A${section}B02`,`A${section}X01`,`A${section}X02`,`A${section}Y01`,`A${section}Y02`,`A${section}L01`,`A${section}WL2`];
+    names.forEach((name,index)=>{const date=section<=2?(index<6?'2026-11-18':index<10?'2026-11-19':''):section===3&&index<6?'2026-11-20':'';
+      rows.push({'構件ID':`DEMO-${section}-${index}`,'節次':String(section),'構件編號':name,'吊裝完成日期':date,'電銲完成日期':date==='2026-11-18'?'2026-11-20':'','吊次編號':date?`${date}-S${section}-${index>=6?Math.floor(index/2):index}`:''});});
+  }
+  const members=normalizeMembers(rows),plans={all:[{date:'2026-11-16',count:0},{date:'2026-11-18',count:12},{date:'2026-11-20',count:30},{date:'2026-11-23',count:62},{date:'2026-11-26',count:84},{date:'2026-11-28',count:96}]};
+  return{members,settings:initialSettings(),actualMinutes:{'2026-11-18':300,'2026-11-19':80,'2026-11-20':140},plans,schedules:{all:{startDate:'2026-11-16',dailyLifts:6,workweek:7}},actualLifts:{},source:'demo'};
+}
+
+function cadSnapshotToState(payload){
+  if(payload?.schema!=='steel-cad-dashboard-v1'||payload.quantityBasis!=='CAD_MARKED_NOT_PHYSICAL'||!Array.isArray(payload.records)||!payload.report)throw Error('不是本版Apps Script匯出的CAD網站資料');
+  validateCadReport(payload.report);
+  const types={'鋼大梁':'大梁','鋼小梁':'小梁','柱':'柱','側撐材':'側撐','BRB':'BRB','塔吊補強件':'塔吊補強'},members=[],names=new Set(),warnings=[...(payload.warnings||[])];
+  for(const record of payload.records){
+    if(typeof record.name!=='string'||!record.name||names.has(record.name)||!Number.isSafeInteger(record.quantity)||record.quantity<1||!types[record.kind])throw Error('CAD網站資料包含重複編號、未知分類或無效數量');
+    names.add(record.name);if(members.length+record.quantity>200000)throw Error('網站目前最多處理200000個標示單位');
+    const partial=new Map(),whole=(record.progress||[]).filter(row=>row.ordinal===null);
+    if(whole.length>1||whole.length&&(record.progress||[]).length>1)throw Error('CAD進度整組與分項重複');
+    for(const progress of record.progress||[]){if(progress.ordinal===null)continue;if(!Number.isInteger(progress.ordinal)||progress.ordinal<1||progress.ordinal>record.quantity||partial.has(progress.ordinal))throw Error('CAD進度標示序號不正確或重複');partial.set(progress.ordinal,progress);}
+    for(let ordinal=1;ordinal<=record.quantity;ordinal++){
+      const progress=whole[0]||partial.get(ordinal)||{};
+      members.push({id:'CAD-MARK:'+encodeURIComponent(record.name)+':'+ordinal,name:record.name,explicit:types[record.kind],type:types[record.kind],section:record.section||'未指定施工節次',lift:progress.lift||'',weld:progress.weld||'',batch:progress.batch||''});
+    }
+  }
+  if(!members.length)throw Error('沒有可納入網站的已確認標示數量，請先處理CAD異常分頁');
+  const keys=new Set(['all',...members.map(member=>member.section)]),schedules=Object.create(null),actualLifts=Object.create(null);
+  for(const [key,value]of Object.entries(payload.schedules||{})){if(keys.has(key))schedules[key]=value;else warnings.push('預估排程 '+key+' 不在本次可辨識施工節次，未套用');}
+  for(const [key,value]of Object.entries(payload.actualLifts||{})){if(keys.has(key))actualLifts[key]=value;else warnings.push('實際吊數 '+key+' 不在本次可辨識施工節次，未套用');}
+  return{members,settings:payload.settings,actualMinutes:payload.actualMinutes||{},actualLifts,schedules,plans:{},source:'cad',cadMeta:{quantityBasis:payload.quantityBasis,sourceFile:String(payload.sourceFile||''),sourceHash:String(payload.sourceHash||''),quantities:Object.fromEntries(payload.records.map(record=>[record.name,record.quantity])),analysisByName:Object.fromEntries(payload.records.map(record=>[record.name,String(record.analysis||record.name)])),apiUrl:String(payload.apiUrl||''),apiReference:String(payload.reference||''),apiRows:Object.fromEntries(payload.records.filter(record=>record.apiRow).map(record=>[record.name,record.apiRow])),report:payload.report,warnings}};
+}
+function validateCadReport(report){if(!report?.overview||!Number.isSafeInteger(report.overview.dataRows)||report.overview.dataRows<0||!Array.isArray(report.summary)||report.summary.some(row=>!row||typeof row.kind!=='string')||!Array.isArray(report.anomalies)||report.anomalies.some(row=>!row||typeof row.message!=='string')||!Array.isArray(report.limitations))throw Error('CAD檢核報告格式不完整');}
+
+const CAD_HEADERS = ['完整名稱','分區','樓層／節次','大梁方向(G/B)','小梁方向(X/Y)','流水號','構件類型','構件代碼','X軸線','Y軸線','BRB軸線','未拆分尾碼','出現次數','標示數量合計','說明'];
+const CAD_KINDS = ['鋼大梁','鋼小梁','柱','側撐材','BRB','塔吊補強件'];
+
+function parseTsv_(text) {
+  const rows=String(text).replace(/^\uFEFF/,'').split(/\r\n|\n|\r/).map((line,index)=>({line:index+1,cells:line.split('\t')})).filter(row=>row.cells.some(value=>value!==''));
+  const header=rows.shift();
+  const normalize=value=>value.trim().replace('樓層/節次','樓層／節次');
+  if(!header||header.cells.length!==15||header.cells.some((value,index)=>normalize(value)!==CAD_HEADERS[index]))throw Error('TXT 標題列或欄位順序不符，必須是指定的15個Tab欄位');
+  return rows;
+}
+
+function identifyCad_(name) {
+  if(/^AV/.test(name))return{kind:'塔吊補強件',code:'AV',area:null,level:null,levelMeaning:'未定義',serial:null,tail:null};
+  if(/^[BGbg]\d+$/.test(name))return{kind:/^[BG]/.test(name)?'RC大梁短號':'RC小梁短號',short:true};
+  if(/^C\d+$/.test(name))return{kind:'短柱號',short:true};
+  const match=name.match(/^([A-Z]+)(\d+)(.+)$/);if(!match)return null;
+  const [,area,level,tail]=match;
+  const base={area,level,levelMeaning:'樓層／節次待圖面確認',serial:null,tail:null};
+  if(/^[BGXY]\d+$/.test(tail)&&name.length>=5&&name.length<=6)return{...base,kind:/^[BG]/.test(tail)?'鋼大梁':'鋼小梁',code:tail[0],serial:tail.slice(1),levelMeaning:'樓層'};
+  const column=tail.match(/^CX(\d+)Y(\d+)$/);
+  if(column)return{...base,kind:'柱',code:'C',axisX:column[1],axisY:column[2],levelMeaning:'節次'};
+  const brace=tail.match(/^(WL|L)(\d+)$/);
+  if(brace)return{...base,kind:'側撐材',code:brace[1],serial:brace[2]};
+  if(tail.startsWith('BU')&&tail.length>2)return{...base,kind:'BRB',code:'BU',tail:tail.slice(2)};
+  return null;
+}
+
+function normalizedKind_(raw) {
+  const aliases={'鋼大梁':'鋼大梁','鋼小梁':'鋼小梁','大梁':'鋼大梁','小梁':'鋼小梁','STEEL_BIG':'鋼大梁','STEEL_SMALL':'鋼小梁','柱':'柱','COLUMN':'柱','側撐材':'側撐材','側向支撐':'側撐材','側撐':'側撐材','側撐角鐵':'側撐材','LATERAL':'側撐材','LATERAL_ANGLE':'側撐材','BRB':'BRB','塔吊補強件':'塔吊補強件','塔吊補強':'塔吊補強件','TOWER':'塔吊補強件'};
+  return aliases[raw]||null;
+}
+
+function quantity_(raw) {
+  const value=String(raw).trim();
+  if(!/^\d+(?:\.0+)?$/.test(value))return null;
+  const number=Number(value);return Number.isSafeInteger(number)&&number>0?number:null;
+}
+
+function analyzeCadRows_(sourceRows) {
+  const records=sourceRows.map((source,index)=>({row:source.row??index+2,line:source.line,raw:source.cells.slice(),name:source.cells[0]??'',axisFieldsRemoved:source.axisFieldsRemoved===true,issues:[],eligible:false}));
+  const byName=new Map();
+  for(const record of records){if(!byName.has(record.name))byName.set(record.name,[]);byName.get(record.name).push(record);}
+  const duplicates=[...byName].filter(([name,rows])=>name&&rows.length>1).map(([name,rows])=>({name,rows:rows.map(row=>row.row)}));
+  for(const record of records){
+    const issue=(code,message,severity='error')=>record.issues.push({code,message,severity});
+    if(record.raw.length!==15){issue('COLUMN_COUNT',`欄位數 ${record.raw.length}，應為15`);continue;}
+    const raw=record.raw;
+    if(!record.name){issue('MISSING_NAME','完整名稱空白');continue;}
+    if(record.name!==record.name.trim())issue('NAME_WHITESPACE','完整名稱含首尾空白，原文保留，請核對');
+    const parsed=identifyCad_(record.name);record.parsed=parsed;record.quantity=quantity_(raw[13]);
+    if(record.quantity===null)issue('QUANTITY','標示數量合計不是正整數或為空白／待確認，未納入已確認數量');
+    if(byName.get(record.name).length>1)issue('DUPLICATE','完整名稱有多列：'+byName.get(record.name).map(item=>item.row).join('、')+'；各列均暫不相加');
+    if(!parsed){issue('UNKNOWN_ID','編號不符合已定義的完整格式，不按字數猜分類');continue;}
+    if(parsed.short){issue('SHORT_ID',parsed.kind+'：缺少同圖塊關係，不能補成完整編號或由本檔推算完整RC數量');continue;}
+    record.kind=parsed.kind;
+    const kind=normalizedKind_(raw[6]);
+    if(!raw[6])issue('MISSING_KIND','構件類型欄位空白');else if(kind!==parsed.kind)issue('KIND_MISMATCH',`原分類「${raw[6]}」與編號辨識「${parsed.kind}」不一致`);
+    if(!raw[7])issue('MISSING_CODE','構件代碼欄位空白');else if(raw[7]!==parsed.code)issue('CODE_MISMATCH',`構件代碼「${raw[7]}」與辨識「${parsed.code}」不一致`);
+    const compare=(index,expected,label,alternatives=[])=>{if(raw[index]==='')issue('MISSING_FIELD',label+'空白');else if(![expected,...alternatives].includes(raw[index]))issue('FIELD_MISMATCH',`${label}「${raw[index]}」與編號「${expected}」不一致`);};
+    if(parsed.area!==null)compare(1,parsed.area,'分區');
+    if(parsed.level!==null)compare(2,parsed.level,'樓層／節次');
+    if(parsed.serial!==null)compare(5,parsed.serial,'流水號');
+    if(parsed.kind==='鋼大梁'){compare(3,parsed.code,'大梁方向');if(raw[4])issue('DIRECTION_MISMATCH','大梁卻填有小梁方向');}
+    if(parsed.kind==='鋼小梁'){compare(4,parsed.code,'小梁方向');if(raw[3])issue('DIRECTION_MISMATCH','小梁卻填有大梁方向');}
+    if(!['鋼大梁','鋼小梁'].includes(parsed.kind)&&(raw[3]||raw[4]))issue('DIRECTION_MISMATCH','非鋼梁卻填有大梁／小梁方向');
+    if(parsed.kind==='柱'&&!record.axisFieldsRemoved){compare(8,parsed.axisX,'X軸線',['X'+parsed.axisX]);compare(9,parsed.axisY,'Y軸線',['Y'+parsed.axisY]);}
+    if(parsed.kind==='BRB'){
+      if(raw[11]!==parsed.tail)issue('TAIL_MISMATCH','BU未拆分尾碼與原編號尾碼不一致');
+      if(raw[5]||raw[10])issue('BRB_UNVERIFIED_SPLIT','BU尾碼流水號／BRB軸線僅保留原欄值，不採用尚未確認的拆法','warning');
+    }
+    if(parsed.kind==='塔吊補強件'&&(raw[1]||raw[2]))issue('AV_UNDEFINED','AV分區／樓層欄值保留原文，但分組統計列未定義，不自行採認','warning');
+    if(!raw[12])issue('MISSING_APPEARANCE','出現次數空白；不以此欄替代標示數量','warning');
+    else if(quantity_(raw[12])===null)issue('APPEARANCE','出現次數格式待核對；不影響標示數量解析','warning');
+    if(raw[14])issue('SOURCE_NOTE','原說明：'+raw[14],'warning');
+    record.eligible=!record.issues.some(item=>item.severity==='error');
+  }
+  const summary=CAD_KINDS.map(kind=>{const rows=records.filter(record=>record.kind===kind);return{kind,uniqueIds:new Set(rows.map(row=>row.name)).size,sourceRows:rows.length,confirmedMarkedQuantity:rows.filter(row=>row.eligible).reduce((sum,row)=>sum+row.quantity,0),excludedRows:rows.filter(row=>!row.eligible).length};});
+  if(summary.some(row=>!Number.isSafeInteger(row.confirmedMarkedQuantity)))throw Error('標示數量合計超出安全整數範圍');
+  const groups=new Map();
+  for(const record of records.filter(row=>row.kind)){
+    const parsed=record.parsed,area=parsed.area??'未定義',level=parsed.level??'未定義',key=JSON.stringify([area,level,parsed.levelMeaning,record.kind]);
+    if(!groups.has(key))groups.set(key,{area,level,levelMeaning:parsed.levelMeaning,kind:record.kind,ids:new Set(),confirmedMarkedQuantity:0,excludedRows:0});
+    const group=groups.get(key);group.ids.add(record.name);if(record.eligible)group.confirmedMarkedQuantity+=record.quantity;else group.excludedRows++;
+  }
+  const natural=(left,right)=>String(left).localeCompare(String(right),'zh-TW',{numeric:true,sensitivity:'variant'});
+  const sorted=records.slice().sort((left,right)=>natural(left.kind||'待確認',right.kind||'待確認')||natural(left.parsed?.area||'',right.parsed?.area||'')||natural(left.parsed?.level||'',right.parsed?.level||'')||natural(left.parsed?.serial??left.name,right.parsed?.serial??right.name)||left.row-right.row);
+  const anomalies=records.flatMap(record=>record.issues.map(issue=>({row:record.row,line:record.line,name:record.name,rawQuantity:record.raw[13]??'',...issue})));
+  const overview={dataRows:records.length,eligibleRows:records.filter(row=>row.eligible).length,excludedRows:records.filter(row=>!row.eligible).length,areas:[...new Set(records.map(row=>row.raw[1]).filter(Boolean))].sort(natural),levels:[...new Set(records.map(row=>row.raw[2]).filter(Boolean))].sort(natural),duplicateIds:duplicates.length,beamColumnMarkedQuantity:summary.filter(row=>['鋼大梁','鋼小梁','柱'].includes(row.kind)).reduce((sum,row)=>sum+row.confirmedMarkedQuantity,0),quantityBasis:'CAD_MARKED_NOT_PHYSICAL'};
+  return{overview,summary,groups:[...groups.values()].map(group=>({...group,uniqueIds:group.ids.size,ids:undefined})),records:sorted,duplicates,anomalies,limitations:['數量是標示數量，不保證跨視圖去重，不稱為實際工程總量。','重複編號的各列暫不相加；未去重的不同視圖標示不擅自扣除。','出現次數不作支數，倍數已納入標示數量合計，不再次乘算。','梁的數字段是樓層；柱的數字段是節次，網站另設施工節次對照。','RC短號缺少同圖塊上下文，不能推算完整RC梁數量。','空白欄位不是零；未匯出的構件不代表CAD中不存在。']};
+}
+
+function analyzeCadText_(text){return analyzeCadRows_(parseTsv_(text));}
+
+function simpleSheetToSnapshot(data,settings){
+  if(!data?.ok||data.schema!=='steel-sheet-api-v1'||!Array.isArray(data.rows))throw Error(data?.error||'API資料格式不符');
+  const sourceRows=data.rows.map(row=>({row:row.rowNumber,line:row.rowNumber,axisFieldsRemoved:true,cells:CAD_HEADERS.map(header=>String(row.values?.[header]??(header==='樓層／節次'?row.values?.['樓層/節次']:'')??''))}));
+  const report=analyzeCadRows_(sourceRows),byRow=new Map(data.rows.map(row=>[row.rowNumber,row]));
+  const records=report.records.filter(record=>record.eligible).map(record=>{
+    const apiRow=byRow.get(record.row),values=apiRow.values;
+    return{name:record.name,kind:record.kind,quantity:record.quantity,section:values['施工節次']||(record.kind==='柱'?record.parsed.level:'未指定施工節次'),analysis:[record.raw[1],record.raw[2],record.raw[3],record.raw[4],record.raw[5],record.raw[6],record.raw[7],record.raw[11]].join('｜'),progress:values['吊裝完成日期']||values['電銲完成日期']?[{ordinal:null,lift:values['吊裝完成日期']||'',weld:values['電銲完成日期']||'',batch:values['吊次編號']||''}]:[],apiRow:{rowNumber:apiRow.rowNumber,name:apiRow.name,version:apiRow.version,values}};
+  });
+  return{schema:'steel-cad-dashboard-v1',quantityBasis:'CAD_MARKED_NOT_PHYSICAL',sourceFile:data.sheetName,sourceHash:data.reference,reference:data.reference,records,report,settings,actualMinutes:{},actualLifts:{},schedules:{},warnings:['網站讀寫的是指定分頁；X軸線、Y軸線、BRB軸線不回傳、不寫回。']};
+}
+
+function validApiUrl(value){const url=new URL(value);if(url.protocol!=='https:'||url.hostname!=='script.google.com'||!/^\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(url.pathname))throw Error('請填Apps Script部署後的https://script.google.com/macros/s/…/exec網址');return url;}
+function sheetApiJsonp(endpoint,action,payload){
+  const url=validApiUrl(endpoint),callback='_steelApi_'+Date.now()+'_'+Math.random().toString(36).slice(2);
+  url.searchParams.set('action',action);url.searchParams.set('callback',callback);url.searchParams.set('_ts',String(Date.now()));if(payload)url.searchParams.set('payload',JSON.stringify(payload));
+  if(action==='result')url.searchParams.set('requestId',payload.requestId);
+  if(url.href.length>7500)throw Error('單次寫回內容過長，請分次更新');
+  return new Promise((resolve,reject)=>{
+    const script=document.createElement('script');let timer;
+    const finish=()=>{clearTimeout(timer);script.remove();delete window[callback];};
+    window[callback]=data=>{finish();if(data?.ok)resolve(data);else reject(Error(data?.error||'API未回傳成功結果'));};
+    script.onerror=()=>{finish();reject(Error('無法連線；若剛才是寫回，請重新讀取確認，勿直接假定成功。'));};
+    timer=setTimeout(()=>{finish();reject(Error('未取得API確認；請重新讀取確認是否已寫回。'));},30000);
+    script.src=url.href;document.head.append(script);
+  });
+}
+async function sheetApiRequest(endpoint,action,payload){
+  if(action!=='write')return sheetApiJsonp(endpoint,action,payload);
+  const url=validApiUrl(endpoint),requestId=crypto.randomUUID();
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),30000);
+  try{await fetch(url.href,{method:'POST',mode:'no-cors',credentials:'omit',signal:controller.signal,headers:{'Content-Type':'text/plain;charset=UTF-8'},body:JSON.stringify({...payload,action:'write',requestId})});}catch{throw Error('未取得寫回回應，請重新讀取確認，不直接假定成功。');}finally{clearTimeout(timer);}
+  for(let attempt=0;attempt<15;attempt++){
+    const receipt=await sheetApiJsonp(endpoint,'result',{requestId});if(!receipt.pending)return receipt;
+    await new Promise(resolve=>setTimeout(resolve,800));
+  }
+  throw Error('未取得寫回確認，請重新讀取確認資料，勿直接假定成功。');
+}
+
+const get=id=>document.getElementById(id),KEY='steel-progress-dashboard-v1';
+const number=(value,digits=1)=>value===null?'待補':Number(value).toLocaleString('zh-TW',{maximumFractionDigits:digits});
+const displayDate=date=>date?date.replaceAll('-','/'):'—';
+const message=text=>{get('status').textContent=text;};
+let state=sample(),section='all',query='',typeFilter='all',page=0;
+const PAGE=18;
+const googleButton=document.createElement('button');googleButton.textContent='從Google Sheet讀取';const cadFileLabel=document.createElement('label');cadFileLabel.className='button';cadFileLabel.textContent='匯入CAD網站JSON';const cadFile=document.createElement('input');cadFile.type='file';cadFile.accept='.json';cadFile.hidden=true;cadFileLabel.append(cadFile);document.querySelector('header .actions').append(googleButton,cadFileLabel);
+googleButton.id='google-read';cadFile.id='cad-import';
+const apiControls=document.createElement('div');apiControls.className='row';const apiLabel=document.createElement('label');apiLabel.textContent='Apps Script API 網址';const apiInput=document.createElement('input');apiInput.id='api-url';apiInput.type='url';apiInput.placeholder='https://script.google.com/macros/s/…/exec';apiInput.style.width='min(650px,100%)';apiLabel.append(apiInput);const apiReadButton=document.createElement('button');apiReadButton.textContent='讀取試算表';apiReadButton.onclick=()=>googleButton.click();apiControls.append(apiLabel,apiReadButton);document.querySelector('.connection').prepend(apiControls);try{apiInput.value=localStorage.getItem('steel-simple-api-url')||'';}catch{}
+apiControls.style.width='100%';apiLabel.style.flex='1';apiLabel.style.minWidth='200px';apiInput.style.width='100%';document.querySelector('.connection h2').textContent='Google Sheet 簡易讀寫 API';document.querySelector('.connection p').textContent='貼上部署後的API網址即可讀取；構件表可寫回施工節次與完成日期，不設定auth或token。';
+const writeDialog=document.createElement('dialog');writeDialog.innerHTML='<h2 id="write-title"></h2><p id="write-note" class="muted"></p><div class="fields"><label>施工節次<input id="write-section"></label><label>吊裝完成日期<input id="write-lift" placeholder="YYYYMMDD"></label><label>電銲完成日期<input id="write-weld" placeholder="YYYYMMDD"></label></div><div class="row"><button id="write-save" class="primary">寫回試算表</button><button id="write-cancel">取消</button></div><p id="write-status" role="status"></p>';writeDialog.style.maxWidth='min(600px,95vw)';writeDialog.style.border='1px solid #d5dfe6';writeDialog.style.borderRadius='10px';document.body.append(writeDialog);let remoteEditing=null;get('write-cancel').onclick=()=>writeDialog.close();
+const cadPanel=document.createElement('section');cadPanel.className='panel';cadPanel.hidden=true;document.querySelector('footer').before(cadPanel);
+const sectionLabel=value=>value==='all'?'全案':value==='未指定施工節次'?value:`第 ${value} 節`;
+const liftHeader=document.createElement('th');liftHeader.textContent='補登實際總吊數';get('days-body').closest('table').tHead.rows[0].append(liftHeader);
+const revisedLegend=document.createElement('span'),revisedMark=document.createElement('i');revisedMark.className='revised';revisedLegend.append(revisedMark,'依實績推估');document.querySelector('.chart-legend').insertBefore(revisedLegend,get('edit-plan'));
+document.querySelector('.chart-panel .panel-heading p').textContent='設定起始日與每日吊數，自動推算至吊完';
+document.querySelector('.chart-bottom>span:last-child').textContent='實際線僅含已確認構件；吊數折算列為推估，不重複扣除';
+const quotaPanel=document.createElement('section');quotaPanel.className='panel';const quotaHeading=document.createElement('h2');quotaHeading.textContent='每天吊數與自動完工推估';const quotaSummary=document.createElement('p');quotaSummary.className='muted';const quotaButton=document.createElement('button');quotaButton.textContent='設定起始日與每天吊數';quotaButton.onclick=()=>{get('tab-progress').click();get('edit-plan').click();};quotaPanel.append(quotaHeading,quotaSummary,quotaButton);get('panel-settings').prepend(quotaPanel);
+try{const saved=localStorage.getItem(KEY);if(saved)state=verifyState(JSON.parse(saved));}catch{message('儲存資料無法讀取，先載入示範。');}
+function verifySettings(settings){
+  if(!settings||!Number.isFinite(settings.reference)||settings.reference<=0||!Number.isFinite(settings.minutesPerDay)||settings.minutesPerDay<=0)throw Error('工效基準格式錯誤');
+  const result=initialSettings();result.reference=settings.reference;result.minutesPerDay=settings.minutesPerDay;
+  for(const type of TYPES){for(let size=1;size<=3;size++){const rate=settings.rates?.[type]?.[size];if(rate!==null&&rate!==undefined&&(!Number.isFinite(rate)||rate<=0))throw Error('標準分鐘必須為正數');result.rates[type][size]=rate??null;}const batch=Number(settings.plannedBatch?.[type]||1);if(![1,2,3].includes(batch))throw Error('每吊件數須為1～3');result.plannedBatch[type]=batch;}
+  return result;
+}
+function verifyState(input){
+  if(!input||!Array.isArray(input.members)||!input.plans||!input.actualMinutes)throw Error('分析備份格式不符');
+  const members=normalizeMembers(input.members.map(member=>({'構件ID':member.id,'節次':member.section,'構件編號':member.name,'構件類型':member.explicit||'','吊裝完成日期':member.lift,'電銲完成日期':member.weld,'吊次編號':member.batch})));
+  const settings=verifySettings(input.settings),plans=Object.create(null),actualMinutes=Object.create(null);
+  for(const [key,rows]of Object.entries(input.plans)){if(!['all',...members.map(member=>member.section)].includes(key))throw Error('預計曲線的節次不存在');plans[key]=validatePlan(rows,key==='all'?members.length:members.filter(member=>member.section===key).length);}
+  for(const [date,value]of Object.entries(input.actualMinutes)){const clean=dateValue(date);if(!Number.isFinite(value)||value<=0)throw Error('實際作業分鐘須為正數');actualMinutes[clean]=value;}
+  const schedules=Object.create(null),actualLifts=Object.create(null),keys=new Set(['all',...members.map(member=>member.section)]);
+  for(const [key,value]of Object.entries(input.schedules||{})){if(!keys.has(key))throw Error('自動排程節次不存在');schedules[key]=validateSchedule(value);}
+  for(const [key,values]of Object.entries(input.actualLifts||{})){if(!keys.has(key))throw Error('實際吊數節次不存在');actualLifts[key]=Object.create(null);for(const [date,value]of Object.entries(values)){if(!Number.isInteger(value)||value<0)throw Error('實際吊數須為非負整數');actualLifts[key][dateValue(date)]=value;}}
+  const cadMeta=input.source==='cad'&&input.cadMeta?.quantityBasis==='CAD_MARKED_NOT_PHYSICAL'?JSON.parse(JSON.stringify(input.cadMeta)):null;
+  if(cadMeta){validateCadReport(cadMeta.report);if(!Array.isArray(cadMeta.warnings))throw Error('CAD提示格式不符');for(const member of members)member.analysis=cadMeta.analysisByName?.[member.name]||member.name;}
+  return{members,settings,plans,actualMinutes,schedules,actualLifts,source:cadMeta?'cad':input.source==='demo'?'demo':'import',...(cadMeta?{cadMeta}:{})};
+}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state));get('save-note').textContent='已儲存在目前瀏覽器';}catch{get('save-note').textContent='瀏覽器無法儲存，請匯出備份';}}
+function current(){return state.members.filter(member=>section==='all'||member.section===section);}
+function scheduleResult(){return state.schedules?.[section]?automaticSchedule(current(),state.settings,state.schedules[section],state.actualLifts?.[section]||{}):null;}
+function initialize(){
+  get('section').replaceChildren(new Option('全案','all'));
+  [...new Set(state.members.map(member=>member.section))].sort((left,right)=>left.localeCompare(right,undefined,{numeric:true})).forEach(value=>get('section').add(new Option(sectionLabel(value),value)));
+  get('type-filter').replaceChildren(new Option('全部類型','all'));TYPES.forEach(type=>get('type-filter').add(new Option(type,type)));
+  get('source').textContent=state.source==='cad'?'CAD標示數量 · 非實體工程總量':state.source==='demo'?'示範資料 · 非工程實績':'已匯入資料';get('asof').textContent=displayDate(TODAY);get('section').value=section;
+  document.querySelector('.stats>div:first-child>span').textContent=state.source==='cad'?'已確認標示數量':'構件數';
+  document.querySelector('.stats>div:first-child>small').textContent=state.source==='cad'?'排除重複、數量不明及分類衝突列':'納入目前節次';
+  document.querySelector('#members-table').closest('.panel').querySelector('.panel-heading p').textContent=state.source==='cad'?'每列為計算用標示單位，不是已跨視圖去重的實體構件；原始彙總保留在Sheet。':'每列代表一個實體構件；同名構件不自動合併';
+  renderCadReport();
+  renderRates();render();
+}
+function render(){
+  const members=current(),completed=members.filter(member=>member.lift&&member.lift<=TODAY),remaining=members.length-completed.length,percent=members.length?completed.length/members.length*100:0;
+  get('total').textContent=members.length;get('completed').textContent=completed.length;get('remaining').textContent=remaining;get('percent').textContent=number(percent)+'%';get('completion-rate').textContent=`${completed.length} / ${members.length} 件`;get('progress-fill').style.width=percent+'%';
+  renderMembers(members);renderChart();renderEfficiency();renderScheduleSummary();
+}
+function cell(row,text,className=''){const node=document.createElement('td');node.textContent=text;if(className)node.className=className;row.append(node);return node;}
+function renderMembers(members){
+  const filtered=members.filter(member=>(typeFilter==='all'||member.type===typeFilter)&&(!query||member.name.toUpperCase().includes(query.toUpperCase())));
+  page=Math.max(0,Math.min(page,Math.ceil(filtered.length/PAGE)-1));
+  const remote=state.source==='cad'&&state.cadMeta.apiUrl;const head=document.createElement('tr');for(const label of ['構件編號',...(get('show-analysis').checked?['分析編號']:[]),'吊裝完成日期','電銲完成日期',...(remote?['寫回']:[])]){const node=document.createElement('th');node.textContent=label;head.append(node);}get('members-head').replaceChildren(head);
+  get('members-body').replaceChildren();
+  for(const member of filtered.slice(page*PAGE,(page+1)*PAGE)){
+    const row=document.createElement('tr'),name=cell(row,member.name,'member-id'),badge=document.createElement('span');badge.className='type-badge'+(member.type==='待確認'?' unknown':'');badge.textContent=member.type;name.append(badge);name.title=`ID：${member.id}；節次：${member.section}；吊次：${member.batch||'未填'}`;
+    if(state.source==='cad'){const unit=document.createElement('span');unit.className='type-badge';unit.textContent=`標示單位 ${member.id.split(':').at(-1)}／${state.cadMeta.quantities?.[member.name]||1}`;name.append(unit);}
+    if(get('show-analysis').checked)cell(row,member.analysis,'analysis');
+    cell(row,displayDate(member.lift),member.lift?'':'empty-date');cell(row,displayDate(member.weld),member.weld?'':'empty-date');if(remote){const target=document.createElement('td'),button=document.createElement('button');button.textContent='編輯日期';button.onclick=()=>openRemoteEditor(member);target.append(button);row.append(target);}get('members-body').append(row);
+  }
+  if(!filtered.length){const row=document.createElement('tr');cell(row,'沒有符合條件的構件').colSpan=head.children.length;get('members-body').append(row);}
+  get('table-count').textContent=`共 ${filtered.length} 個構件${members.some(member=>member.type==='待確認')?' · 含待確認類型':''}`;get('page-number').textContent=`${filtered.length?page+1:0} / ${Math.ceil(filtered.length/PAGE)}`;get('prev').disabled=page===0;get('next').disabled=(page+1)*PAGE>=filtered.length;
+}
+function svgNode(type,attrs={},text=''){const node=document.createElementNS('http://www.w3.org/2000/svg',type);for(const [key,value]of Object.entries(attrs))node.setAttribute(key,value);if(text)node.textContent=text;return node;}
+function renderChart(){
+  if(get('panel-progress').hidden)return;
+  const svg=get('s-chart'),members=current(),schedule=scheduleResult(),plan=schedule?.original||state.plans[section]||[],actual=members.filter(member=>member.lift&&member.lift<=TODAY);
+  revisedLegend.hidden=!schedule;
+  const width=Math.max(260,svg.clientWidth),height=svg.clientHeight||310,left=52,right=24,top=28,bottom=42;
+  svg.setAttribute('viewBox',`0 0 ${width} ${height}`);svg.replaceChildren(svgNode('title',{},'預計與實際累計構件數；日期橫軸，構件數縱軸'));
+  const events=[...new Set(actual.map(member=>member.lift))].sort(),day=86400000;
+  const timestamps=[Date.parse(TODAY),...plan.map(point=>Date.parse(point.date)),...(schedule?.revised||[]).map(point=>Date.parse(point.date)),...events.map(date=>Date.parse(date))];
+  const first=Math.min(...timestamps)-day,last=Math.max(...timestamps),span=Math.max(day,last-first),maximum=Math.max(members.length,1);
+  const x=value=>left+(Date.parse(value)-first)/span*(width-left-right),y=value=>top+(maximum-value)/maximum*(height-top-bottom);
+  for(let index=0;index<=4;index++){const value=maximum*index/4,vertical=y(value);svg.append(svgNode('line',{x1:left,y1:vertical,x2:width-right,y2:vertical,stroke:'#e5edf2'}));svg.append(svgNode('text',{x:left-12,y:vertical+5,'text-anchor':'end',fill:'#7c929f','font-size':13},number(value,0)));}
+  svg.append(svgNode('text',{x:0,y:14,fill:'#607d90','font-size':13},state.source==='cad'?'累計標示數量':'累計構件數'));
+  const tickCount=Math.min(width<500?3:6,Math.floor(span/day)+1);for(let index=0;index<tickCount;index++){const timestamp=first+span*index/(tickCount-1),date=new Date(timestamp).toISOString().slice(0,10);svg.append(svgNode('text',{x:x(date),y:height-14,'text-anchor':'middle',fill:'#7c929f','font-size':13},date.slice(5).replace('-','/')));}
+  svg.append(svgNode('text',{x:width-right,y:height-1,'text-anchor':'end',fill:'#7c929f','font-size':12},'日期'));
+  let cumulative=0,actualPath=`M ${left} ${y(0)}`;
+  for(const date of events){actualPath+=` H ${x(date)}`;cumulative+=actual.filter(member=>member.lift===date).length;actualPath+=` V ${y(cumulative)}`;}
+  actualPath+=` H ${x(TODAY)}`;
+  svg.append(svgNode('path',{d:actualPath+` L ${x(TODAY)} ${y(0)} L ${left} ${y(0)} Z`,fill:'#347aa6','fill-opacity':'.055'}));
+  if(plan.length){const path=plan.map((point,index)=>`${index?'L':'M'} ${x(point.date)} ${y(point.count)}`).join(' ');svg.append(svgNode('path',{d:path,fill:'none',stroke:'#3a9b91','stroke-width':2.5,'stroke-dasharray':'7 5'}));for(const point of plan){const circle=svgNode('circle',{cx:x(point.date),cy:y(point.count),r:4,fill:'#3a9b91'});circle.append(svgNode('title',{},`${displayDate(point.date)} 預計 ${point.count} 件`));svg.append(circle);}}
+  if(schedule){const path=schedule.revised.map((point,index)=>`${index?'L':'M'} ${x(point.date)} ${y(point.count)}`).join(' ');svg.append(svgNode('path',{d:path,fill:'none',stroke:'#bd8335','stroke-width':2.5,'stroke-dasharray':'4 4'}));}
+  svg.append(svgNode('path',{d:actualPath,fill:'none',stroke:'#347aa6','stroke-width':3,'stroke-linejoin':'round'}));
+  const today=x(TODAY);svg.append(svgNode('line',{x1:today,y1:top,x2:today,y2:height-bottom,stroke:'#a4b6c2','stroke-dasharray':'3 5'}));svg.append(svgNode('text',{x:Math.min(width-right-35,Math.max(left+35,today)),y:top-9,'text-anchor':'middle',fill:'#648195','font-size':12},'統計日'));
+  const dot=svgNode('circle',{cx:today,cy:y(actual.length),r:4.5,fill:'#347aa6'});dot.append(svgNode('title',{},`${displayDate(TODAY)} 實際完成 ${actual.length} 件`));svg.append(dot);
+  const expected=interpolatePlan(plan,TODAY),gap=expected===null?null:actual.length-expected;
+  get('plan-gap').textContent=schedule?`已安裝 ${schedule.installedCount} 件；另由吊數推估 ${schedule.inferredCount} 件；尚需 ${schedule.remainingLifts} 吊 · 推估 ${displayDate(schedule.finishDate)} 吊完`:(expected===null?`實際完成 ${actual.length} 件 · 此範圍尚無統計日的預計值`:`截至 ${displayDate(TODAY)}：實際 ${actual.length} 件／預計約 ${number(expected)} 件 · ${Math.abs(gap)<.05?'符合預計':gap>0?'超前約 '+number(gap)+' 件':'落後約 '+number(-gap)+' 件'}`);
+}
+function renderPlanEditor(){
+  get('plan-scope').textContent=`目前編輯：${sectionLabel(section)}，${state.source==='cad'?'已確認標示數量':'總構件數'} ${current().length}。各範圍的吊數分開記錄，全案吊數不任意分攤至各節次。`;
+  const config=state.schedules?.[section];get('schedule-start').value=config?.startDate||TODAY;get('schedule-lifts').value=config?.dailyLifts||'';get('schedule-week').value=config?.workweek||7;
+  get('actual-lift-rows').replaceChildren();for(const [date,lifts]of Object.entries(state.actualLifts?.[section]||{}).sort(([left],[right])=>left.localeCompare(right)))addActualLiftRow({date,lifts});
+  get('plan-rows').replaceChildren();for(const point of state.plans[section]||[])addPlanRow(point);
+  renderScheduleSummary();
+}
+function renderScheduleSummary(){const result=scheduleResult();get('schedule-summary').textContent=result?`每日 ${result.config.dailyLifts} 吊；扣除已安裝 ${result.installedCount} 件、吊數另折算 ${result.inferredCount} 件後，剩 ${result.remainingCount} 件／${result.remainingLifts} 吊，約 ${result.workingDays} 個施工日，推估 ${displayDate(result.finishDate)} 吊完。${result.inferredCount?'折算件數只供推估，不代表已確認安裝；依剩餘類型順序分批。':''}${result.warnings.join('；')}`:'填起始日與每天預計吊數，即可自動推算。';}
+function addActualLiftRow(point={date:'',lifts:''}){const row=document.createElement('tr'),date=document.createElement('input'),lifts=document.createElement('input'),remove=document.createElement('button');date.value=point.date;date.placeholder='YYYYMMDD';date.setAttribute('aria-label','實際吊數日期');lifts.type='number';lifts.min=0;lifts.step=1;lifts.value=point.lifts;lifts.setAttribute('aria-label','實際總吊數');remove.textContent='移除';remove.onclick=()=>row.remove();for(const node of [date,lifts,remove]){const td=document.createElement('td');td.append(node);row.append(td);}get('actual-lift-rows').append(row);}
+function addPlanRow(point={date:'',count:''}){const row=document.createElement('tr'),date=document.createElement('input'),count=document.createElement('input'),remove=document.createElement('button');date.value=point.date;date.placeholder='YYYYMMDD';date.setAttribute('aria-label','預計日期');count.type='number';count.min='0';count.step='1';count.value=point.count;count.setAttribute('aria-label','預計累計構件數');remove.textContent='移除';remove.onclick=()=>row.remove();for(const element of [date,count,remove]){const td=document.createElement('td');td.append(element);row.append(td);}get('plan-rows').append(row);}
+function renderRates(){
+  get('rates-body').replaceChildren();for(const type of TYPES.filter(type=>type!=='待確認')){
+    const row=document.createElement('tr');cell(row,type);
+    for(let size=1;size<=3;size++){
+      const td=document.createElement('td');if(size>1&&!['小梁','側撐'].includes(type))td.textContent='—';else{const input=document.createElement('input');input.type='number';input.min='.1';input.step='.1';input.value=state.settings.rates[type][size]??'';input.placeholder='待填';input.dataset.type=type;input.dataset.size=size;input.setAttribute('aria-label',`${type}一吊${size}件分鐘`);td.append(input);}row.append(td);
+    }
+    cell(row,state.settings.rates[type][1]?number(state.settings.rates[type][1]/state.settings.reference,2):'待補');get('rates-body').append(row);
+  }
+  get('reference').value=state.settings.reference;get('daily-minutes').value=state.settings.minutesPerDay;get('small-batch').value=state.settings.plannedBatch['小梁'];get('brace-batch').value=state.settings.plannedBatch['側撐'];
+}
+function renderEfficiency(){
+  const schedule=scheduleResult(),inferred=new Set(schedule?.inferredIds||[]),remaining=current().filter(member=>(!member.lift||member.lift>TODAY)&&!inferred.has(member.id)),result=forecast(state.members,remaining,state.settings,state.actualMinutes);
+  quotaSummary.textContent=schedule?`每天 ${schedule.config.dailyLifts} 吊；已安裝 ${schedule.installedCount} 件，另折算 ${schedule.inferredCount} 件後，剩 ${schedule.remainingLifts} 吊，推估 ${displayDate(schedule.finishDate)} 完成。小梁目前 ${state.settings.plannedBatch['小梁']} 件／吊；柱與大梁固定1件／吊。`:'不必逐日填累計數。設定起始日及每天幾吊，系統依各類型每吊件數自動推算。';
+  get('forecast-hours').textContent=result.hours===null?'資料待補':number(result.hours)+' 工時';get('forecast-days').textContent=result.days===null?'補齊標準時間後計算':`約 ${number(result.days)} 工作天（每日 ${state.settings.minutesPerDay} 分鐘）`;
+  get('forecast-standard').textContent=result.cost===null?'待補':number(result.cost)+' 分';get('forecast-factor').textContent=result.sampleDays?number(result.factor,3):'1.000（未校準）';get('forecast-samples').textContent=result.sampleDays+' 天';
+  get('forecast-note').textContent=result.missing.length?'無法完整推估，缺少：'+result.missing.join('、'):result.sampleDays?`依全案 ${result.sampleDays} 個有效日的批次與實際時間校準；目前節次剩餘件數 ${remaining.length}。`:'尚無有效實際時間，以設定標準值推估，並非實測工效。';
+  get('days-body').replaceChildren();for(const day of analyzeDays(state.members,state.settings,state.actualMinutes)){
+    const row=document.createElement('tr');for(const value of [displayDate(day.date),day.count,number(day.lifts,0),number(day.equivalent,2),number(day.average,2),number(day.standard)])cell(row,String(value));
+    const td=document.createElement('td'),input=document.createElement('input');input.type='number';input.min='1';input.step='1';input.value=day.actual??'';input.dataset.date=day.date;input.placeholder='待填';input.setAttribute('aria-label',`${day.date}實際作業分鐘`);td.append(input);row.append(td);cell(row,number(day.perHour,2));const status=cell(row,day.factor===null?'不納入':number(day.factor,3));status.title=day.issues.join('、')||(!day.actual?'缺實際作業分鐘':'');
+    const liftCell=document.createElement('td'),liftInput=document.createElement('input');liftInput.type='number';liftInput.min=0;liftInput.step=1;liftInput.value=state.actualLifts?.all?.[day.date]??'';liftInput.dataset.liftDate=day.date;liftInput.placeholder=day.lifts===null?'待填':String(day.lifts);liftInput.setAttribute('aria-label',`${day.date}實際總吊數`);liftCell.append(liftInput);row.append(liftCell);get('days-body').append(row);
+  }
+}
+function download(text,name){const url=URL.createObjectURL(new Blob([text],{type:'application/octet-stream'})),link=document.createElement('a');link.href=url;link.download=name;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+get('section').onchange=event=>{section=event.target.value;page=0;render();renderPlanEditor();};get('search').oninput=event=>{query=event.target.value;page=0;renderMembers(current());};get('type-filter').onchange=event=>{typeFilter=event.target.value;page=0;renderMembers(current());};get('show-analysis').onchange=()=>renderMembers(current());get('prev').onclick=()=>{page--;renderMembers(current());};get('next').onclick=()=>{page++;renderMembers(current());};
+for(const name of ['progress','settings'])get('tab-'+name).onclick=()=>{for(const other of ['progress','settings']){get('tab-'+other).setAttribute('aria-selected',String(other===name));get('panel-'+other).hidden=other!==name;}if(name==='progress')renderChart();};
+get('edit-plan').onclick=()=>{renderPlanEditor();get('plan-editor').hidden=false;get('plan-editor').scrollIntoView({behavior:'smooth',block:'nearest'});};get('close-plan').onclick=()=>get('plan-editor').hidden=true;get('add-plan').onclick=()=>addPlanRow();
+get('save-plan').onclick=()=>{try{const rows=[...get('plan-rows').children].map(row=>{const inputs=row.querySelectorAll('input');if(inputs[1].value==='')throw Error('請填入預計累計數');return{date:inputs[0].value,count:inputs[1].value};});state.plans[section]=validatePlan(rows,current().length);delete state.schedules?.[section];save();renderChart();renderPlanEditor();message('已改用手動預計曲線。');}catch(error){message(error.message);}};
+get('save-schedule').onclick=()=>{try{const config=validateSchedule({startDate:get('schedule-start').value,dailyLifts:get('schedule-lifts').value,workweek:get('schedule-week').value});automaticSchedule(current(),state.settings,config,state.actualLifts?.[section]||{});state.schedules??={};state.schedules[section]=config;save();render();renderPlanEditor();message('已依每天吊數自動產生完整曲線，實績會先扣除再推估。');}catch(error){message(error.message);}};
+get('add-actual-lift').onclick=()=>addActualLiftRow();get('save-actual-lifts').onclick=()=>{try{const values=Object.create(null);for(const row of get('actual-lift-rows').children){const inputs=row.querySelectorAll('input'),date=dateValue(inputs[0].value),value=Number(inputs[1].value);if(date>TODAY)throw Error('實際吊數不可填未來日期');if(inputs[1].value===''||!Number.isInteger(value)||value<0)throw Error('實際吊數須為非負整數');if(Object.hasOwn(values,date))throw Error('實際吊數日期重複');values[date]=value;}state.actualLifts??={};state.actualLifts[section]=values;save();render();message('實際吊數已儲存，已核對同日安裝記錄後重算。');}catch(error){message(error.message);}};
+get('save-rates').onclick=()=>{try{const settings=structuredClone(state.settings);get('rates-body').querySelectorAll('input').forEach(input=>{settings.rates[input.dataset.type][Number(input.dataset.size)]=input.value===''?null:Number(input.value);});settings.reference=Number(get('reference').value);settings.minutesPerDay=Number(get('daily-minutes').value);state.settings=verifySettings(settings);save();renderRates();renderEfficiency();message('標準分鐘與加權工效已重新計算。');}catch(error){message(error.message);}};
+for(const [id,type]of [['small-batch','小梁'],['brace-batch','側撐']])get(id).onchange=event=>{state.settings.plannedBatch[type]=Number(event.target.value);save();render();};
+get('save-days').onclick=()=>{try{const values={...state.actualMinutes},lifts={...state.actualLifts?.all};get('days-body').querySelectorAll('input[data-date]').forEach(input=>{if(input.value==='')delete values[input.dataset.date];else{const value=Number(input.value);if(!Number.isFinite(value)||value<=0)throw Error('實際作業分鐘須大於0');values[input.dataset.date]=value;}});get('days-body').querySelectorAll('input[data-lift-date]').forEach(input=>{if(input.value==='')delete lifts[input.dataset.liftDate];else{const value=Number(input.value);if(!Number.isInteger(value)||value<0)throw Error('實際總吊數須為非負整數');lifts[input.dataset.liftDate]=value;}});state.actualMinutes=values;state.actualLifts??={};state.actualLifts.all=lifts;save();render();message('實際作業時間與總吊數已儲存，先扣除已安裝實績後重算。');}catch(error){message(error.message);}};
+get('import').onchange=async event=>{try{const file=event.target.files[0];if(!file)return;if(file.size>20*1024*1024)throw Error('CSV 超過20MB，請先縮減資料');const rows=parseCsv(await file.text()),members=normalizeMembers(rows);if(!members.length)throw Error('CSV 沒有構件資料');state={members,settings:state.settings,actualMinutes:{},plans:{},source:'import'};section='all';page=0;save();initialize();message(`已匯入 ${members.length} 個構件；預計曲線與每日實際時間需另填。`);}catch(error){message(error.message);}event.target.value='';};
+get('backup').onclick=()=>download(JSON.stringify({...state,schema:1},null,2),'鋼構分析備份.json');get('restore').onchange=async event=>{try{const file=event.target.files[0];if(!file)return;if(file.size>20*1024*1024)throw Error('備份過大');const next=verifyState(JSON.parse(await file.text()));if(confirm('以備份取代目前分析資料？')){state=next;section='all';page=0;save();initialize();message('分析備份已還原。');}}catch(error){message(error.message);}event.target.value='';};
+get('reset').onclick=()=>{if(confirm('重設為示範資料？目前資料請先匯出備份。')){state=sample();section='all';save();initialize();message('已重設示範，尚非工程實績。');}};
+get('template').onclick=()=>{const kind=get('template-kind').value;const samples={members:['構件資料欄位範本.csv','構件ID,節次,構件編號,構件類型,吊裝完成日期,電銲完成日期,吊次編號\r\nEXAMPLE-001,1,A1G01,,,,\r\nEXAMPLE-002,1,A1X01,,,,\r\nEXAMPLE-003,1,A1CX2Y1,,,,\r\nEXAMPLE-004,1,A1WL2,,,,\r\n'],daily:['每日作業欄位範本.csv','吊裝日期,實際吊裝分鐘,實際總吊數\r\n'],plans:['預計曲線欄位範本.csv','節次,日期,預計累計數\r\n']};download('\uFEFF'+samples[kind][1],samples[kind][0]);};
+for(const [id,kind]of [['import-daily','daily'],['import-plans','plans']])get(id).onchange=async event=>{
+  try{
+    const file=event.target.files[0];if(!file)return;if(file.size>5*1024*1024)throw Error('CSV 超過5MB');
+    const rows=parseCsv(await file.text());
+    if(kind==='daily'){const actualMinutes=normalizeDaily(rows),reports=normalizeActualLifts(rows);state.actualMinutes=actualMinutes;state.actualLifts??={};state.actualLifts.all=reports;message('已匯入每日實際作業時間及吊數；已有安裝記錄先核對後再推估。');}
+    else{const plans=normalizePlans(rows,state.members);state.plans={...state.plans,...plans};message('已匯入預計累計曲線；CSV 含有的節次已取代，其他節次保留。');}
+    save();render();renderPlanEditor();
+  }catch(error){message(error.message);}event.target.value='';
+};
+new ResizeObserver(()=>renderChart()).observe(get('s-chart'));
+function renderCadReport(){
+  cadPanel.replaceChildren();cadPanel.hidden=state.source!=='cad';if(cadPanel.hidden)return;
+  const meta=state.cadMeta,report=meta.report,heading=document.createElement('h2');heading.textContent='CAD來源與數量檢核';cadPanel.append(heading);
+  const note=document.createElement('p');note.className='notice';note.textContent=`來源：${meta.sourceFile}；資料 ${report.overview.dataRows} 列，可納入 ${report.overview.eligibleRows} 列，未納入 ${report.overview.excludedRows} 列。${(report.limitations||[]).join(' ')}`;cadPanel.append(note);
+  const table=document.createElement('table'),head=document.createElement('tr');for(const label of ['類型','編號種類數','已確認標示數量','未納入列數']){const th=document.createElement('th');th.textContent=label;head.append(th);}table.append(head);
+  for(const item of report.summary){const row=document.createElement('tr');for(const value of [item.kind,item.uniqueIds,item.confirmedMarkedQuantity,item.excludedRows])cell(row,String(value));table.append(row);}const wrap=document.createElement('div');wrap.className='table-wrap';wrap.append(table);cadPanel.append(wrap);
+  const details=document.createElement('details'),summary=document.createElement('summary');summary.textContent=`異常與提示 ${(report.anomalies||[]).length} 項；連動提示 ${(meta.warnings||[]).length} 項`;details.append(summary);
+  for(const item of (report.anomalies||[]).slice(0,100)){const paragraph=document.createElement('p');paragraph.textContent=`列 ${item.row} ${item.name}：${item.message}`;details.append(paragraph);}
+  for(const warning of (meta.warnings||[]).slice(0,100)){const paragraph=document.createElement('p');paragraph.textContent=String(warning);details.append(paragraph);}
+  const limit=document.createElement('p');limit.textContent='網站各顯示前100項；完整異常、原始15欄、分區／樓層／節次統計，請查看同批次Google Sheet報告。';details.append(limit);cadPanel.append(details);
+}
+function acceptCadSnapshot(payload){const next=verifyState(cadSnapshotToState(payload));state=next;section='all';page=0;save();initialize();message('已載入CAD已確認標示數量；未跨視圖去重，不當作實際工程總量。');}
+googleButton.onclick=()=>{
+  if(apiInput.value){readRemote().catch(error=>message('讀取未完成：'+error.message));return;}
+  if(!window.google?.script?.run){message('請在頁面下方填Apps Script部署的API網址，再按讀取試算表。');apiInput.focus();return;}
+  googleButton.disabled=true;message('正在讀取Google Sheet及檢核CAD資料…');
+  window.google.script.run.withSuccessHandler(payload=>{googleButton.disabled=false;try{acceptCadSnapshot(payload);}catch(error){message(error.message);}}).withFailureHandler(error=>{googleButton.disabled=false;message('Google Sheet讀取未完成：'+error.message);}).getDashboardData();
+};
+async function readRemote(){
+  const endpoint=validApiUrl(apiInput.value.trim()).href;googleButton.disabled=true;apiReadButton.disabled=true;message('正在讀取試算表…');
+  try{
+    const data=await sheetApiRequest(endpoint,'read'),packet=simpleSheetToSnapshot(data,state.settings);packet.apiUrl=endpoint;
+    if(state.cadMeta?.apiReference===data.reference){packet.schedules=state.schedules;packet.actualLifts=state.actualLifts;packet.actualMinutes=state.actualMinutes;}
+    acceptCadSnapshot(packet);try{localStorage.setItem('steel-simple-api-url',endpoint);}catch{}
+  }finally{googleButton.disabled=false;apiReadButton.disabled=false;}
+}
+function openRemoteEditor(member){const row=state.cadMeta.apiRows[member.name];if(!row){message('找不到可寫回的來源列，請重新讀取');return;}remoteEditing={...row,apiUrl:state.cadMeta.apiUrl};get('write-title').textContent=member.name;get('write-note').textContent=`此編號的標示數量為 ${state.cadMeta.quantities[member.name]}，日期寫回同一來源列，適用此編號全部標示單位。`;get('write-section').value=row.values['施工節次']||'';get('write-lift').value=row.values['吊裝完成日期']||'';get('write-weld').value=row.values['電銲完成日期']||'';get('write-status').textContent='';writeDialog.showModal();}
+get('write-save').onclick=async()=>{
+  if(!remoteEditing)return;get('write-save').disabled=true;let written=false;
+  try{
+    const changes={'施工節次':get('write-section').value,'吊裝完成日期':dateValue(get('write-lift').value,true),'電銲完成日期':dateValue(get('write-weld').value,true)};
+    if(changes['電銲完成日期']&&(!changes['吊裝完成日期']||changes['電銲完成日期']<changes['吊裝完成日期']))throw Error('電銲日期不可早於吊裝日期');
+    get('write-status').textContent='寫回中…';await sheetApiRequest(remoteEditing.apiUrl,'write',{rowNumber:remoteEditing.rowNumber,name:remoteEditing.name,version:remoteEditing.version,changes});written=true;await readRemote();writeDialog.close();message('已確認寫回指定欄位，並重新讀取最新資料。');
+  }catch(error){get('write-status').textContent=(written?'已寫回，但重新讀取未完成：':'未完成寫回確認：')+error.message;}finally{get('write-save').disabled=false;}
+};
+cadFile.onchange=async event=>{try{const file=event.target.files[0];if(!file)return;if(file.size>20*1024*1024)throw Error('CAD網站JSON超過20MB');acceptCadSnapshot(JSON.parse(await file.text()));}catch(error){message(error.message);}event.target.value='';};
+initialize();
+if(window.google?.script?.run)googleButton.click();
+</script></body></html>
