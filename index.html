@@ -276,7 +276,12 @@ function analyzeCadRows_(sourceRows) {
     const compare=(index,expected,label,alternatives=[])=>{if(raw[index]==='')issue('MISSING_FIELD',label+'空白');else if(![expected,...alternatives].includes(raw[index]))issue('FIELD_MISMATCH',`${label}「${raw[index]}」與編號「${expected}」不一致`);};
     if(parsed.area!==null)compare(1,parsed.area,'分區');
     if(parsed.level!==null)compare(2,parsed.level,'樓層／節次');
-    if(parsed.serial!==null)compare(5,parsed.serial,'流水號');
+    if(parsed.serial!==null){
+      const entered=raw[5],expected=parsed.serial;
+      if(!entered)issue('MISSING_FIELD','流水號空白');
+      else if(!(/^\d+$/.test(entered)&&/^\d+$/.test(expected)&&entered.replace(/^0+(?=\d)/,'')===expected.replace(/^0+(?=\d)/,''))&&entered!==expected)
+        issue('FIELD_MISMATCH',`流水號「${entered}」與編號「${expected}」不一致`);
+    }
     if(parsed.kind==='鋼大梁'){compare(3,parsed.code,'大梁方向');if(raw[4])issue('DIRECTION_MISMATCH','大梁卻填有小梁方向');}
     if(parsed.kind==='鋼小梁'){compare(4,parsed.code,'小梁方向');if(raw[3])issue('DIRECTION_MISMATCH','小梁卻填有大梁方向');}
     if(!['鋼大梁','鋼小梁'].includes(parsed.kind)&&(raw[3]||raw[4]))issue('DIRECTION_MISMATCH','非鋼梁卻填有大梁／小梁方向');
