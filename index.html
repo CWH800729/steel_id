@@ -7,7 +7,8 @@
 <div class="page"><div class="scope"><div><span class="eyebrow">樓層／節次</span><select id="section" aria-label="樓層／節次"><option value="all">全案</option></select></div><div class="scope-note">統計截至 <strong id="asof"></strong><br>資料與日期請在 Google Sheet 修改</div></div>
 <section class="stats" aria-label="構件進度摘要"><div><span>已確認標示數量</span><strong id="total">—</strong><small>依目前施工節次</small></div><div><span>已完成吊裝</span><strong id="completed">—</strong><small id="completion-rate">等待資料</small></div><div><span>剩餘數</span><strong id="remaining">—</strong><small>尚未完成吊裝</small></div><div class="stat-progress"><span>吊裝完成率</span><strong id="percent">—</strong><div class="track"><i id="progress-fill"></i></div></div></section>
 <section class="panel chart-panel"><div class="panel-heading"><div><h2>累計吊裝進度</h2><p>依 Google Sheet 的完成日統計</p></div><div class="chart-legend"><span><i class="actual"></i>實際吊裝</span></div></div><svg id="s-chart" role="img" aria-label="日期與累計構件數"></svg><div class="chart-bottom"><span id="chart-note">等待 Google Sheet 資料</span><span>橫軸日期 · 縱軸累計標示數量</span></div></section>
-<section class="panel"><div class="panel-heading"><div><h2>構件明細</h2><p>數量為 CAD 標示數量，未跨視圖去重；每列為一個計算用標示單位</p></div><div class="table-controls"><label class="check"><input id="show-analysis" type="checkbox">顯示分析編號</label><input id="search" placeholder="搜尋構件編號" aria-label="搜尋構件編號"><select id="type-filter" aria-label="構件類型"><option value="all">全部類型</option></select></div></div><div class="table-wrap"><table id="members-table"><thead id="members-head"></thead><tbody id="members-body"></tbody></table></div><div class="pagination"><span id="table-count"></span><div class="row"><button id="prev">上一頁</button><span id="page-number"></span><button id="next">下一頁</button></div></div></section>
+<section class="panel"><div class="panel-heading"><div><h2>構件明細</h2><p>數量為 CAD 標示數量，未跨視圖去重；每列為一個計算用標示單位</p></div><div class="table-controls"><label class="check"><input id="show-analysis" type="checkbox">顯示分析編號</label><select id="filter-column" aria-label="篩選欄位"></select><input id="search" placeholder="包含的文字" aria-label="包含的文字"><select id="type-filter" aria-label="構件類型"><option value="all">全部類型</option></select></div></div><div class="table-wrap"><table id="members-table"><thead id="members-head"></thead><tbody id="members-body"></tbody></table></div><div class="pagination"><span id="table-count"></span><div class="row"><button id="prev">上一頁</button><span id="page-number"></span><button id="next">下一頁</button></div></div></section>
+<dialog id="date-dialog" style="border:1px solid #d5dfe6;border-radius:10px;padding:24px;max-width:min(420px,95vw)"><h2 id="date-title">完成日</h2><p id="date-note" class="muted"></p><label>完成日<input id="date-input" placeholder="YYYYMMDD"></label><div class="row" style="margin-top:20px"><button id="date-save" class="primary">寫回 Google Sheet</button><button id="date-cancel">取消</button></div><p id="date-status" role="status"></p></dialog>
 <section id="cad-report" class="panel" hidden></section><footer><span id="status" role="status" aria-live="polite">正在讀取 Google Sheet…</span></footer></div><script type="module">const SHEET_API_URL='https://script.google.com/macros/s/AKfycby2_yu-RR2vDofagSV1QMmqQPl7jP2u2KzIrxkVFh-VxLJL11JZxdWotwr_cc4nBJ20/exec';
 
 const TYPES=['柱','大梁','小梁','側撐','BRB','塔吊補強','待確認'];
@@ -326,7 +327,7 @@ function simpleSheetToSnapshot(data,settings){
     try{completed=dateValue(values['完成日'],true);}catch{throw Error('第 '+apiRow.rowNumber+' 列「完成日」無效：'+values['完成日']);}
     return{name:record.name,kind:record.kind,quantity:record.quantity,section:values['樓層／節次']||'未指定樓層／節次',analysis:[record.raw[1],record.raw[2],record.raw[3],record.raw[4],record.raw[5],record.raw[6],record.raw[7],record.raw[11]].join('｜'),progress:completed?[{ordinal:null,lift:completed,weld:'',batch:''}]:[],apiRow:{rowNumber:apiRow.rowNumber,name:apiRow.name,version:apiRow.version,values}};
   });
-  return{schema:'steel-cad-dashboard-v1',quantityBasis:'CAD_MARKED_NOT_PHYSICAL',sourceFile:data.sheetName,sourceHash:data.reference,reference:data.reference,records,report,settings,actualMinutes:{},actualLifts:{},schedules:{},warnings:['網頁唯讀；完成日來自 Google Sheet。']};
+  return{schema:'steel-cad-dashboard-v1',quantityBasis:'CAD_MARKED_NOT_PHYSICAL',sourceFile:data.sheetName,sourceHash:data.reference,reference:data.reference,records,report,settings,actualMinutes:{},actualLifts:{},schedules:{},warnings:['完成日由 Google Sheet 讀取，網頁僅可寫回此欄。']};
 }
 
 function validApiUrl(value){const url=new URL(value);if(url.protocol!=='https:'||url.hostname!=='script.google.com'||!/^\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(url.pathname))throw Error('請填Apps Script部署後的https://script.google.com/macros/s/…/exec網址');return url;}
@@ -358,7 +359,9 @@ async function sheetApiRequest(endpoint,action,payload){
 
 const get=id=>document.getElementById(id),fmt=value=>Number(value).toLocaleString('zh-TW'),dateText=value=>value?value.replaceAll('-','/'):'—';
 const svgNode=(name,attributes={},value)=>{const node=document.createElementNS('http://www.w3.org/2000/svg',name);for(const [key,item] of Object.entries(attributes))node.setAttribute(key,item);if(value!==undefined)node.textContent=value;return node;};
-const PAGE=18,button=get('google-read');let state=null,section='all',query='',type='all',page=0;
+const FIELDS=['完整名稱','分區','樓層／節次','大梁方向(G/B)','小梁方向(X/Y)','流水號','構件類型','構件代碼','未拆分尾碼','出現次數','標示數量合計','完成日'];
+const PAGE=18,button=get('google-read');let state=null,section='all',query='',type='all',page=0,editing=null;
+get('filter-column').replaceChildren(...FIELDS.map(field=>new Option(field,field)));
 get('asof').textContent=dateText(TODAY);
 function members(){return(state?.members||[]).filter(member=>section==='all'||member.section===section);}
 function render(){
@@ -368,16 +371,18 @@ function render(){
   renderMembers(list);renderChart(list,done);
 }
 function renderMembers(list){
-  const filtered=list.filter(member=>(type==='all'||member.type===type)&&(!query||member.name.toUpperCase().includes(query.toUpperCase())));
+  const field=get('filter-column').value;
+  const filtered=list.filter(member=>(type==='all'||member.type===type)&&(!query||String(state.cadMeta?.apiRows?.[member.name]?.values?.[field]??'').toLocaleLowerCase().includes(query.toLocaleLowerCase())));
   page=Math.min(page,Math.max(0,Math.ceil(filtered.length/PAGE)-1));
-  const head=document.createElement('tr');for(const label of ['構件編號',...(get('show-analysis').checked?['分析編號']:[]),'完成日']){const th=document.createElement('th');th.textContent=label;head.append(th);}get('members-head').replaceChildren(head);
+  const head=document.createElement('tr');for(const label of ['構件編號',...(get('show-analysis').checked?['分析編號']:[]),'完成日','操作']){const th=document.createElement('th');th.textContent=label;head.append(th);}get('members-head').replaceChildren(head);
   const body=get('members-body');body.replaceChildren();
   for(const member of filtered.slice(page*PAGE,(page+1)*PAGE)){
     const row=document.createElement('tr'),name=row.insertCell();name.className='member-id';name.textContent=member.name;
     const badge=document.createElement('span');badge.className='type-badge';badge.textContent=member.type;name.append(badge);
     const quantity=state.cadMeta?.quantities?.[member.name];if(quantity>1){const unit=document.createElement('span');unit.className='type-badge';unit.textContent=`${Number(member.id.split(':').at(-1))}/${quantity}`;name.append(unit);}
     if(get('show-analysis').checked){const cell=row.insertCell();cell.className='analysis';cell.textContent=state.cadMeta?.analysisByName?.[member.name]||member.name;}
-    const cell=row.insertCell();cell.textContent=dateText(member.lift);if(!member.lift)cell.className='empty-date';body.append(row);
+    const cell=row.insertCell();cell.textContent=dateText(member.lift);if(!member.lift)cell.className='empty-date';
+    const action=row.insertCell(),edit=document.createElement('button');edit.textContent='填寫完成日';edit.onclick=()=>openDateEditor(member);action.append(edit);body.append(row);
   }
   get('table-count').textContent=state?`顯示 ${filtered.length?fmt(page*PAGE+1):0}–${fmt(Math.min((page+1)*PAGE,filtered.length))} / ${fmt(filtered.length)} 件`:'等待資料';
   get('page-number').textContent=`第 ${page+1} / ${Math.max(1,Math.ceil(filtered.length/PAGE))} 頁`;get('prev').disabled=page===0;get('next').disabled=(page+1)*PAGE>=filtered.length;
@@ -398,6 +403,25 @@ function renderReport(){
   const note=document.createElement('p');note.className='notice';note.textContent=`來源資料 ${fmt(report.overview.dataRows)} 列；納入 ${fmt(report.overview.eligibleRows)} 列；未納入 ${fmt(report.overview.excludedRows)} 列。標示數量不保證已跨圖面去重。`;panel.append(note);
   if(report.anomalies?.length){const details=document.createElement('details'),summary=document.createElement('summary');summary.textContent=`查看異常 ${fmt(report.anomalies.length)} 項`;details.append(summary);for(const item of report.anomalies.slice(0,100)){const line=document.createElement('p');line.textContent=`列 ${item.row} ${item.name}：${item.message}`;details.append(line);}panel.append(details);}
 }
+function openDateEditor(member){
+  const source=state.cadMeta?.apiRows?.[member.name];if(!source){get('status').textContent='找不到此構件的來源列，請更新資料。';return;}
+  editing={...source};get('date-title').textContent=member.name;
+  const quantity=state.cadMeta.quantities[member.name];
+  get('date-note').textContent=quantity>1?`此編號的標示數量為 ${quantity}；填寫日期會套用來源列的全部標示單位。`:'日期會寫回此編號的 Google Sheet 來源列。';
+  get('date-input').value=source.values['完成日']||'';get('date-status').textContent='';get('date-dialog').showModal();
+}
+get('date-cancel').onclick=()=>get('date-dialog').close();
+get('date-save').onclick=async()=>{
+  if(!editing)return;
+  const save=get('date-save');save.disabled=true;let written=false;
+  try{
+    const completed=dateValue(get('date-input').value,true);
+    get('date-status').textContent='寫回中…';
+    await sheetApiRequest(SHEET_API_URL,'write',{rowNumber:editing.rowNumber,name:editing.name,version:editing.version,changes:{'完成日':completed}});
+    written=true;await readRemote();get('date-dialog').close();get('status').textContent='完成日已寫回 Google Sheet，並重新讀取最新資料。';
+  }catch(error){get('date-status').textContent=(written?'已寫回，但重新讀取未完成：':'未完成寫回確認：')+error.message;}
+  finally{save.disabled=false;}
+};
 async function readRemote(){
   button.disabled=true;button.textContent='讀取中…';get('status').textContent='正在讀取 Google Sheet…';
   try{
@@ -410,6 +434,7 @@ async function readRemote(){
 }
 button.onclick=readRemote;get('section').onchange=event=>{section=event.target.value;page=0;render();};
 get('search').oninput=event=>{query=event.target.value;page=0;renderMembers(members());};get('type-filter').onchange=event=>{type=event.target.value;page=0;renderMembers(members());};get('show-analysis').onchange=()=>renderMembers(members());
+get('filter-column').onchange=()=>{page=0;renderMembers(members());};
 get('prev').onclick=()=>{page--;renderMembers(members());};get('next').onclick=()=>{page++;renderMembers(members());};
 new ResizeObserver(()=>renderChart(members(),members().filter(member=>member.lift&&member.lift<=TODAY))).observe(get('s-chart'));
 render();readRemote();
