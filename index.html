@@ -9,7 +9,7 @@
 <section class="panel chart-panel"><div class="panel-heading"><div><h2>累計吊裝進度</h2><p>依 Google Sheet 的完成日統計</p></div><div class="chart-legend"><span><i class="actual"></i>實際吊裝</span></div></div><svg id="s-chart" role="img" aria-label="日期與累計構件數"></svg><div class="chart-bottom"><span id="chart-note">等待 Google Sheet 資料</span><span>橫軸日期 · 縱軸累計標示數量</span></div></section>
 <section class="panel"><div class="panel-heading"><div><h2>構件明細</h2><p>數量為 CAD 標示數量，未跨視圖去重；每列為一個計算用標示單位</p></div><div class="table-controls"><label class="check"><input id="show-analysis" type="checkbox">顯示分析編號</label><select id="filter-column" aria-label="篩選欄位"></select><input id="search" placeholder="包含的文字" aria-label="包含的文字"><select id="type-filter" aria-label="構件類型"><option value="all">全部類型</option></select></div></div><div class="table-wrap"><table id="members-table"><thead id="members-head"></thead><tbody id="members-body"></tbody></table></div><div class="pagination"><span id="table-count"></span><div class="row"><button id="prev">上一頁</button><span id="page-number"></span><button id="next">下一頁</button></div></div></section>
 <dialog id="date-dialog" style="border:1px solid #d5dfe6;border-radius:10px;padding:24px;max-width:min(420px,95vw)"><h2 id="date-title">完成日</h2><p id="date-note" class="muted"></p><label>完成日<input id="date-input" placeholder="YYYYMMDD"></label><div class="row" style="margin-top:20px"><button id="date-save" class="primary">寫回 Google Sheet</button><button id="date-cancel">取消</button></div><p id="date-status" role="status"></p></dialog>
-<section id="cad-report" class="panel" hidden></section><footer><span id="status" role="status" aria-live="polite">正在讀取 Google Sheet…</span></footer></div><script type="module">const SHEET_API_URL='https://script.google.com/macros/s/AKfycby2_yu-RR2vDofagSV1QMmqQPl7jP2u2KzIrxkVFh-VxLJL11JZxdWotwr_cc4nBJ20/exec';
+<footer><span id="status" role="status" aria-live="polite">正在讀取 Google Sheet…</span></footer></div><script type="module">const SHEET_API_URL='https://script.google.com/macros/s/AKfycby2_yu-RR2vDofagSV1QMmqQPl7jP2u2KzIrxkVFh-VxLJL11JZxdWotwr_cc4nBJ20/exec';
 
 const TYPES=['柱','大梁','小梁','側撐','BRB','塔吊補強','待確認'];
 const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
@@ -193,141 +193,23 @@ function sample(){
   return{members,settings:initialSettings(),actualMinutes:{'2026-11-18':300,'2026-11-19':80,'2026-11-20':140},plans,schedules:{all:{startDate:'2026-11-16',dailyLifts:6,workweek:7}},actualLifts:{},source:'demo'};
 }
 
-function cadSnapshotToState(payload){
-  if(payload?.schema!=='steel-cad-dashboard-v1'||payload.quantityBasis!=='CAD_MARKED_NOT_PHYSICAL'||!Array.isArray(payload.records)||!payload.report)throw Error('不是本版Apps Script匯出的CAD網站資料');
-  validateCadReport(payload.report);
-  const types={'鋼大梁':'大梁','鋼小梁':'小梁','柱':'柱','側撐材':'側撐','BRB':'BRB','塔吊補強件':'塔吊補強'},members=[],names=new Set(),warnings=[...(payload.warnings||[])];
-  for(const record of payload.records){
-    if(typeof record.name!=='string'||!record.name||names.has(record.name)||!Number.isSafeInteger(record.quantity)||record.quantity<1||!types[record.kind])throw Error('CAD網站資料包含重複編號、未知分類或無效數量');
-    names.add(record.name);if(members.length+record.quantity>200000)throw Error('網站目前最多處理200000個標示單位');
-    const partial=new Map(),whole=(record.progress||[]).filter(row=>row.ordinal===null);
-    if(whole.length>1||whole.length&&(record.progress||[]).length>1)throw Error('CAD進度整組與分項重複');
-    for(const progress of record.progress||[]){if(progress.ordinal===null)continue;if(!Number.isInteger(progress.ordinal)||progress.ordinal<1||progress.ordinal>record.quantity||partial.has(progress.ordinal))throw Error('CAD進度標示序號不正確或重複');partial.set(progress.ordinal,progress);}
-    for(let ordinal=1;ordinal<=record.quantity;ordinal++){
-      const progress=whole[0]||partial.get(ordinal)||{};
-      members.push({id:'CAD-MARK:'+encodeURIComponent(record.name)+':'+ordinal,name:record.name,explicit:types[record.kind],type:types[record.kind],section:record.section||'未指定施工節次',lift:progress.lift||'',weld:progress.weld||'',batch:progress.batch||''});
-    }
-  }
-  if(!members.length)throw Error('沒有可納入網站的已確認標示數量，請先處理CAD異常分頁');
-  const keys=new Set(['all',...members.map(member=>member.section)]),schedules=Object.create(null),actualLifts=Object.create(null);
-  for(const [key,value]of Object.entries(payload.schedules||{})){if(keys.has(key))schedules[key]=value;else warnings.push('預估排程 '+key+' 不在本次可辨識施工節次，未套用');}
-  for(const [key,value]of Object.entries(payload.actualLifts||{})){if(keys.has(key))actualLifts[key]=value;else warnings.push('實際吊數 '+key+' 不在本次可辨識施工節次，未套用');}
-  return{members,settings:payload.settings,actualMinutes:payload.actualMinutes||{},actualLifts,schedules,plans:{},source:'cad',cadMeta:{quantityBasis:payload.quantityBasis,sourceFile:String(payload.sourceFile||''),sourceHash:String(payload.sourceHash||''),quantities:Object.fromEntries(payload.records.map(record=>[record.name,record.quantity])),analysisByName:Object.fromEntries(payload.records.map(record=>[record.name,String(record.analysis||record.name)])),apiUrl:String(payload.apiUrl||''),apiReference:String(payload.reference||''),apiRows:Object.fromEntries(payload.records.filter(record=>record.apiRow).map(record=>[record.name,record.apiRow])),report:payload.report,warnings}};
-}
-function validateCadReport(report){if(!report?.overview||!Number.isSafeInteger(report.overview.dataRows)||report.overview.dataRows<0||!Array.isArray(report.summary)||report.summary.some(row=>!row||typeof row.kind!=='string')||!Array.isArray(report.anomalies)||report.anomalies.some(row=>!row||typeof row.message!=='string')||!Array.isArray(report.limitations))throw Error('CAD檢核報告格式不完整');}
-
-const CAD_HEADERS = ['完整名稱','分區','樓層／節次','大梁方向(G/B)','小梁方向(X/Y)','流水號','構件類型','構件代碼','X軸線','Y軸線','BRB軸線','未拆分尾碼','出現次數','標示數量合計','說明'];
-const CAD_KINDS = ['鋼大梁','鋼小梁','柱','側撐材','BRB','塔吊補強件'];
-
-function parseTsv_(text) {
-  const rows=String(text).replace(/^\uFEFF/,'').split(/\r\n|\n|\r/).map((line,index)=>({line:index+1,cells:line.split('\t')})).filter(row=>row.cells.some(value=>value!==''));
-  const header=rows.shift();
-  const normalize=value=>value.trim().replace('樓層/節次','樓層／節次');
-  if(!header||header.cells.length!==15||header.cells.some((value,index)=>normalize(value)!==CAD_HEADERS[index]))throw Error('TXT 標題列或欄位順序不符，必須是指定的15個Tab欄位');
-  return rows;
-}
-
-function identifyCad_(name) {
-  if(/^AV/.test(name))return{kind:'塔吊補強件',code:'AV',area:null,level:null,levelMeaning:'未定義',serial:null,tail:null};
-  if(/^[BGbg]\d+$/.test(name))return{kind:/^[BG]/.test(name)?'RC大梁短號':'RC小梁短號',short:true};
-  if(/^C\d+$/.test(name))return{kind:'短柱號',short:true};
-  const match=name.match(/^([A-Z]+)(\d+)(.+)$/);if(!match)return null;
-  const [,area,level,tail]=match;
-  const base={area,level,levelMeaning:'樓層／節次待圖面確認',serial:null,tail:null};
-  if(/^[BGXY]\d+$/.test(tail)&&name.length>=5&&name.length<=6)return{...base,kind:/^[BG]/.test(tail)?'鋼大梁':'鋼小梁',code:tail[0],serial:tail.slice(1),levelMeaning:'樓層'};
-  const column=tail.match(/^CX(\d+)Y(\d+)$/);
-  if(column)return{...base,kind:'柱',code:'C',axisX:column[1],axisY:column[2],levelMeaning:'節次'};
-  const brace=tail.match(/^(WL|L)(\d+)$/);
-  if(brace)return{...base,kind:'側撐材',code:brace[1],serial:brace[2]};
-  if(tail.startsWith('BU')&&tail.length>2)return{...base,kind:'BRB',code:'BU',tail:tail.slice(2)};
-  return null;
-}
-
-function normalizedKind_(raw) {
-  const aliases={'鋼大梁':'鋼大梁','鋼小梁':'鋼小梁','大梁':'鋼大梁','小梁':'鋼小梁','STEEL_BIG':'鋼大梁','STEEL_SMALL':'鋼小梁','柱':'柱','COLUMN':'柱','側撐材':'側撐材','側向支撐':'側撐材','側撐':'側撐材','側撐角鐵':'側撐材','LATERAL':'側撐材','LATERAL_ANGLE':'側撐材','BRB':'BRB','塔吊補強件':'塔吊補強件','塔吊補強':'塔吊補強件','TOWER':'塔吊補強件'};
-  return aliases[raw]||null;
-}
-
-function quantity_(raw) {
-  const value=String(raw).trim();
-  if(!/^\d+(?:\.0+)?$/.test(value))return null;
-  const number=Number(value);return Number.isSafeInteger(number)&&number>0?number:null;
-}
-
-function analyzeCadRows_(sourceRows) {
-  const records=sourceRows.map((source,index)=>({row:source.row??index+2,line:source.line,raw:source.cells.slice(),name:source.cells[0]??'',axisFieldsRemoved:source.axisFieldsRemoved===true,issues:[],eligible:false}));
-  const byName=new Map();
-  for(const record of records){if(!byName.has(record.name))byName.set(record.name,[]);byName.get(record.name).push(record);}
-  const duplicates=[...byName].filter(([name,rows])=>name&&rows.length>1).map(([name,rows])=>({name,rows:rows.map(row=>row.row)}));
-  for(const record of records){
-    const issue=(code,message,severity='error')=>record.issues.push({code,message,severity});
-    if(record.raw.length!==15){issue('COLUMN_COUNT',`欄位數 ${record.raw.length}，應為15`);continue;}
-    const raw=record.raw;
-    if(!record.name){issue('MISSING_NAME','完整名稱空白');continue;}
-    if(record.name!==record.name.trim())issue('NAME_WHITESPACE','完整名稱含首尾空白，原文保留，請核對');
-    const parsed=identifyCad_(record.name);record.parsed=parsed;record.quantity=quantity_(raw[13]);
-    if(record.quantity===null)issue('QUANTITY','標示數量合計不是正整數或為空白／待確認，未納入已確認數量');
-    if(byName.get(record.name).length>1)issue('DUPLICATE','完整名稱有多列：'+byName.get(record.name).map(item=>item.row).join('、')+'；各列均暫不相加');
-    if(!parsed){issue('UNKNOWN_ID','編號不符合已定義的完整格式，不按字數猜分類');continue;}
-    if(parsed.short){issue('SHORT_ID',parsed.kind+'：缺少同圖塊關係，不能補成完整編號或由本檔推算完整RC數量');continue;}
-    record.kind=parsed.kind;
-    const kind=normalizedKind_(raw[6]);
-    if(!raw[6])issue('MISSING_KIND','構件類型欄位空白');else if(kind!==parsed.kind)issue('KIND_MISMATCH',`原分類「${raw[6]}」與編號辨識「${parsed.kind}」不一致`);
-    if(!raw[7])issue('MISSING_CODE','構件代碼欄位空白');else if(raw[7]!==parsed.code)issue('CODE_MISMATCH',`構件代碼「${raw[7]}」與辨識「${parsed.code}」不一致`);
-    const compare=(index,expected,label,alternatives=[])=>{if(raw[index]==='')issue('MISSING_FIELD',label+'空白');else if(![expected,...alternatives].includes(raw[index]))issue('FIELD_MISMATCH',`${label}「${raw[index]}」與編號「${expected}」不一致`);};
-    if(parsed.area!==null)compare(1,parsed.area,'分區');
-    if(parsed.level!==null)compare(2,parsed.level,'樓層／節次');
-    if(parsed.serial!==null){
-      const entered=raw[5],expected=parsed.serial;
-      if(!entered)issue('MISSING_FIELD','流水號空白');
-      else if(!(/^\d+$/.test(entered)&&/^\d+$/.test(expected)&&entered.replace(/^0+(?=\d)/,'')===expected.replace(/^0+(?=\d)/,''))&&entered!==expected)
-        issue('FIELD_MISMATCH',`流水號「${entered}」與編號「${expected}」不一致`);
-    }
-    if(parsed.kind==='鋼大梁'){compare(3,parsed.code,'大梁方向');if(raw[4])issue('DIRECTION_MISMATCH','大梁卻填有小梁方向');}
-    if(parsed.kind==='鋼小梁'){compare(4,parsed.code,'小梁方向');if(raw[3])issue('DIRECTION_MISMATCH','小梁卻填有大梁方向');}
-    if(!['鋼大梁','鋼小梁'].includes(parsed.kind)&&(raw[3]||raw[4]))issue('DIRECTION_MISMATCH','非鋼梁卻填有大梁／小梁方向');
-    if(parsed.kind==='柱'&&!record.axisFieldsRemoved){compare(8,parsed.axisX,'X軸線',['X'+parsed.axisX]);compare(9,parsed.axisY,'Y軸線',['Y'+parsed.axisY]);}
-    if(parsed.kind==='BRB'){
-      if(raw[11]!==parsed.tail)issue('TAIL_MISMATCH','BU未拆分尾碼與原編號尾碼不一致');
-      if(raw[5]||raw[10])issue('BRB_UNVERIFIED_SPLIT','BU尾碼流水號／BRB軸線僅保留原欄值，不採用尚未確認的拆法','warning');
-    }
-    if(parsed.kind==='塔吊補強件'&&(raw[1]||raw[2]))issue('AV_UNDEFINED','AV分區／樓層欄值保留原文，但分組統計列未定義，不自行採認','warning');
-    if(!raw[12])issue('MISSING_APPEARANCE','出現次數空白；不以此欄替代標示數量','warning');
-    else if(quantity_(raw[12])===null)issue('APPEARANCE','出現次數格式待核對；不影響標示數量解析','warning');
-    if(raw[14])issue('SOURCE_NOTE','原說明：'+raw[14],'warning');
-    record.eligible=!record.issues.some(item=>item.severity==='error');
-  }
-  const summary=CAD_KINDS.map(kind=>{const rows=records.filter(record=>record.kind===kind);return{kind,uniqueIds:new Set(rows.map(row=>row.name)).size,sourceRows:rows.length,confirmedMarkedQuantity:rows.filter(row=>row.eligible).reduce((sum,row)=>sum+row.quantity,0),excludedRows:rows.filter(row=>!row.eligible).length};});
-  if(summary.some(row=>!Number.isSafeInteger(row.confirmedMarkedQuantity)))throw Error('標示數量合計超出安全整數範圍');
-  const groups=new Map();
-  for(const record of records.filter(row=>row.kind)){
-    const parsed=record.parsed,area=parsed.area??'未定義',level=parsed.level??'未定義',key=JSON.stringify([area,level,parsed.levelMeaning,record.kind]);
-    if(!groups.has(key))groups.set(key,{area,level,levelMeaning:parsed.levelMeaning,kind:record.kind,ids:new Set(),confirmedMarkedQuantity:0,excludedRows:0});
-    const group=groups.get(key);group.ids.add(record.name);if(record.eligible)group.confirmedMarkedQuantity+=record.quantity;else group.excludedRows++;
-  }
-  const natural=(left,right)=>String(left).localeCompare(String(right),'zh-TW',{numeric:true,sensitivity:'variant'});
-  const sorted=records.slice().sort((left,right)=>natural(left.kind||'待確認',right.kind||'待確認')||natural(left.parsed?.area||'',right.parsed?.area||'')||natural(left.parsed?.level||'',right.parsed?.level||'')||natural(left.parsed?.serial??left.name,right.parsed?.serial??right.name)||left.row-right.row);
-  const anomalies=records.flatMap(record=>record.issues.map(issue=>({row:record.row,line:record.line,name:record.name,rawQuantity:record.raw[13]??'',...issue})));
-  const overview={dataRows:records.length,eligibleRows:records.filter(row=>row.eligible).length,excludedRows:records.filter(row=>!row.eligible).length,areas:[...new Set(records.map(row=>row.raw[1]).filter(Boolean))].sort(natural),levels:[...new Set(records.map(row=>row.raw[2]).filter(Boolean))].sort(natural),duplicateIds:duplicates.length,beamColumnMarkedQuantity:summary.filter(row=>['鋼大梁','鋼小梁','柱'].includes(row.kind)).reduce((sum,row)=>sum+row.confirmedMarkedQuantity,0),quantityBasis:'CAD_MARKED_NOT_PHYSICAL'};
-  return{overview,summary,groups:[...groups.values()].map(group=>({...group,uniqueIds:group.ids.size,ids:undefined})),records:sorted,duplicates,anomalies,limitations:['數量是標示數量，不保證跨視圖去重，不稱為實際工程總量。','重複編號的各列暫不相加；未去重的不同視圖標示不擅自扣除。','出現次數不作支數，倍數已納入標示數量合計，不再次乘算。','梁的數字段是樓層；柱的數字段是節次，網站另設施工節次對照。','RC短號缺少同圖塊上下文，不能推算完整RC梁數量。','空白欄位不是零；未匯出的構件不代表CAD中不存在。']};
-}
-
-function analyzeCadText_(text){return analyzeCadRows_(parseTsv_(text));}
-
-function simpleSheetToSnapshot(data,settings){
+function simpleSheetToState(data){
   if(!data?.ok||data.schema!=='steel-sheet-api-v1'||!Array.isArray(data.rows))throw Error(data?.error||'API資料格式不符');
-  const expected=['完整名稱','分區','樓層／節次','大梁方向(G/B)','小梁方向(X/Y)','流水號','構件類型','構件代碼','未拆分尾碼','出現次數','標示數量合計','完成日'];
-  const missing=expected.filter(header=>!data.headers?.includes(header));
-  if(missing.length)throw Error('Google Sheet 缺少欄位：'+missing.join('、'));
-  const sourceRows=data.rows.map(row=>({row:row.rowNumber,line:row.rowNumber,axisFieldsRemoved:true,cells:CAD_HEADERS.map(header=>String(row.values?.[header]??(header==='樓層／節次'?row.values?.['樓層/節次']:'')??''))}));
-  const report=analyzeCadRows_(sourceRows),byRow=new Map(data.rows.map(row=>[row.rowNumber,row]));
-  const records=report.records.filter(record=>record.eligible).map(record=>{
-    const apiRow=byRow.get(record.row),values=apiRow.values;
-    let completed='';
-    try{completed=dateValue(values['完成日'],true);}catch{throw Error('第 '+apiRow.rowNumber+' 列「完成日」無效：'+values['完成日']);}
-    return{name:record.name,kind:record.kind,quantity:record.quantity,section:values['樓層／節次']||'未指定樓層／節次',analysis:[record.raw[1],record.raw[2],record.raw[3],record.raw[4],record.raw[5],record.raw[6],record.raw[7],record.raw[11]].join('｜'),progress:completed?[{ordinal:null,lift:completed,weld:'',batch:''}]:[],apiRow:{rowNumber:apiRow.rowNumber,name:apiRow.name,version:apiRow.version,values}};
-  });
-  return{schema:'steel-cad-dashboard-v1',quantityBasis:'CAD_MARKED_NOT_PHYSICAL',sourceFile:data.sheetName,sourceHash:data.reference,reference:data.reference,records,report,settings,actualMinutes:{},actualLifts:{},schedules:{},warnings:['完成日由 Google Sheet 讀取，網頁僅可寫回此欄。']};
+  const required=['完整名稱','標示數量合計','完成日'];
+  const missing=required.filter(field=>!data.headers?.includes(field));if(missing.length)throw Error('Google Sheet 缺少欄位：'+missing.join('、'));
+  const members=[],apiRows=Object.create(null),quantities=Object.create(null);let skippedName=0,skippedQuantity=0,invalidDates=0;
+  for(const row of data.rows){
+    const values=row.values||{},name=String(values['完整名稱']??'').trim(),rawQuantity=String(values['標示數量合計']??'').trim();
+    if(!name){skippedName++;continue;}
+    if(!/^[0-9]+$/.test(rawQuantity)||!Number.isSafeInteger(Number(rawQuantity))||Number(rawQuantity)<1){skippedQuantity++;continue;}
+    const quantity=Number(rawQuantity),sourceRow=Number(row.rowNumber);
+    if(!Number.isInteger(sourceRow)||sourceRow<2||members.length+quantity>200000)throw Error('資料列或標示數量超出網頁可處理範圍');
+    let lift='';try{lift=dateValue(values['完成日'],true);}catch{invalidDates++;}
+    const kind=String(values['構件類型']??'').trim()||'未分類',section=String(values['樓層／節次']??'').trim()||'未指定',analysis=['分區','樓層／節次','大梁方向(G/B)','小梁方向(X/Y)','流水號','構件類型','構件代碼','未拆分尾碼'].map(field=>String(values[field]??'')).join('｜');
+    apiRows[sourceRow]=row;quantities[sourceRow]=quantity;
+    for(let ordinal=1;ordinal<=quantity;ordinal++)members.push({id:sourceRow+':'+ordinal,sourceRow,ordinal,name,section,type:kind,analysis,lift,weld:''});
+  }
+  return{members,apiRows,quantities,skippedName,skippedQuantity,invalidDates};
 }
 
 function validApiUrl(value){const url=new URL(value);if(url.protocol!=='https:'||url.hostname!=='script.google.com'||!/^\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(url.pathname))throw Error('請填Apps Script部署後的https://script.google.com/macros/s/…/exec網址');return url;}
@@ -372,15 +254,15 @@ function render(){
 }
 function renderMembers(list){
   const field=get('filter-column').value;
-  const filtered=list.filter(member=>(type==='all'||member.type===type)&&(!query||String(state.cadMeta?.apiRows?.[member.name]?.values?.[field]??'').toLocaleLowerCase().includes(query.toLocaleLowerCase())));
+  const filtered=list.filter(member=>(type==='all'||member.type===type)&&(!query||String(state?.apiRows?.[member.sourceRow]?.values?.[field]??'').toLocaleLowerCase().includes(query.toLocaleLowerCase())));
   page=Math.min(page,Math.max(0,Math.ceil(filtered.length/PAGE)-1));
   const head=document.createElement('tr');for(const label of ['構件編號',...(get('show-analysis').checked?['分析編號']:[]),'完成日','操作']){const th=document.createElement('th');th.textContent=label;head.append(th);}get('members-head').replaceChildren(head);
   const body=get('members-body');body.replaceChildren();
   for(const member of filtered.slice(page*PAGE,(page+1)*PAGE)){
     const row=document.createElement('tr'),name=row.insertCell();name.className='member-id';name.textContent=member.name;
     const badge=document.createElement('span');badge.className='type-badge';badge.textContent=member.type;name.append(badge);
-    const quantity=state.cadMeta?.quantities?.[member.name];if(quantity>1){const unit=document.createElement('span');unit.className='type-badge';unit.textContent=`${Number(member.id.split(':').at(-1))}/${quantity}`;name.append(unit);}
-    if(get('show-analysis').checked){const cell=row.insertCell();cell.className='analysis';cell.textContent=state.cadMeta?.analysisByName?.[member.name]||member.name;}
+    const quantity=state.quantities?.[member.sourceRow];if(quantity>1){const unit=document.createElement('span');unit.className='type-badge';unit.textContent=`${member.ordinal}/${quantity}`;name.append(unit);}
+    if(get('show-analysis').checked){const cell=row.insertCell();cell.className='analysis';cell.textContent=member.analysis;}
     const cell=row.insertCell();cell.textContent=dateText(member.lift);if(!member.lift)cell.className='empty-date';
     const action=row.insertCell(),edit=document.createElement('button');edit.textContent='填寫完成日';edit.onclick=()=>openDateEditor(member);action.append(edit);body.append(row);
   }
@@ -397,16 +279,10 @@ function renderChart(list,done){
   let cumulative=0,path=`M ${left} ${y(0)}`;for(const date of dates){path+=` H ${x(date)}`;cumulative+=done.filter(member=>member.lift===date).length;path+=` V ${y(cumulative)}`;}path+=` H ${x(TODAY)}`;svg.append(svgNode('path',{d:path,fill:'none',stroke:'#347aa6','stroke-width':3,'stroke-linejoin':'round'}));
   get('chart-note').textContent=`截至 ${dateText(TODAY)}，已完成吊裝 ${fmt(done.length)} 件；尚餘 ${fmt(list.length-done.length)} 件`;
 }
-function renderReport(){
-  const panel=get('cad-report'),report=state?.cadMeta?.report;panel.hidden=!report;panel.replaceChildren();if(!report)return;
-  const heading=document.createElement('h2');heading.textContent='資料檢核';panel.append(heading);
-  const note=document.createElement('p');note.className='notice';note.textContent=`來源資料 ${fmt(report.overview.dataRows)} 列；納入 ${fmt(report.overview.eligibleRows)} 列；未納入 ${fmt(report.overview.excludedRows)} 列。標示數量不保證已跨圖面去重。`;panel.append(note);
-  if(report.anomalies?.length){const details=document.createElement('details'),summary=document.createElement('summary');summary.textContent=`查看異常 ${fmt(report.anomalies.length)} 項`;details.append(summary);for(const item of report.anomalies.slice(0,100)){const line=document.createElement('p');line.textContent=`列 ${item.row} ${item.name}：${item.message}`;details.append(line);}panel.append(details);}
-}
 function openDateEditor(member){
-  const source=state.cadMeta?.apiRows?.[member.name];if(!source){get('status').textContent='找不到此構件的來源列，請更新資料。';return;}
+  const source=state?.apiRows?.[member.sourceRow];if(!source){get('status').textContent='找不到此構件的來源列，請更新資料。';return;}
   editing={...source};get('date-title').textContent=member.name;
-  const quantity=state.cadMeta.quantities[member.name];
+  const quantity=state.quantities[member.sourceRow];
   get('date-note').textContent=quantity>1?`此編號的標示數量為 ${quantity}；填寫日期會套用來源列的全部標示單位。`:'日期會寫回此編號的 Google Sheet 來源列。';
   get('date-input').value=source.values['完成日']||'';get('date-status').textContent='';get('date-dialog').showModal();
 }
@@ -425,10 +301,10 @@ get('date-save').onclick=async()=>{
 async function readRemote(){
   button.disabled=true;button.textContent='讀取中…';get('status').textContent='正在讀取 Google Sheet…';
   try{
-    const endpoint=validApiUrl(SHEET_API_URL).href,data=await sheetApiRequest(endpoint,'read'),packet=simpleSheetToSnapshot(data,initialSettings());state=cadSnapshotToState(packet);section='all';page=0;
+    const endpoint=validApiUrl(SHEET_API_URL).href,data=await sheetApiRequest(endpoint,'read');state=simpleSheetToState(data);section='all';page=0;
     const selector=get('section');selector.replaceChildren(new Option('全案','all'));for(const value of [...new Set(state.members.map(member=>member.section))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true})))selector.add(new Option(value,value));
-    const types=get('type-filter');types.replaceChildren(new Option('全部類型','all'));for(const value of TYPES)types.add(new Option(value,value));type='all';
-    get('source').textContent='Google Sheet · 已更新';get('status').textContent='已讀取最新構件進度。';render();renderReport();
+    const types=get('type-filter');types.replaceChildren(new Option('全部類型','all'));for(const value of [...new Set(state.members.map(member=>member.type))].sort())types.add(new Option(value,value));type='all';
+    get('source').textContent='Google Sheet · 已更新';get('status').textContent='已讀取最新構件進度。'+(state.skippedName?` ${state.skippedName} 列缺少完整名稱，未計入件數。`:'')+(state.skippedQuantity?` ${state.skippedQuantity} 列數量未填或無法辨識，未計入件數。`:'')+(state.invalidDates?` ${state.invalidDates} 列完成日格式無法辨識，暫不列入已完成。`:'');render();
   }catch(error){get('source').textContent=state?'更新失敗 · 顯示上次資料':'Google Sheet 讀取失敗';get('status').textContent=`讀取未完成：${error.message}`;}
   finally{button.disabled=false;button.textContent='從 Google Sheet 更新';}
 }
